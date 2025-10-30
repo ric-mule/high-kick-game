@@ -1,173 +1,173 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fat Mule — Game Checkout</title>
+<!-- Fat Mule Checkout (fully sandboxed / no global styles) -->
+<div class="fm-checkout" id="fm-checkout" data-logo="">
   <style>
-    :root{
-      --ink:#0f172a;--muted:#475569;--bg:#0b1020;--card:#121a33;--border:#1e2a4a;--accent:#7dd3fc;
-      --ok:#22c55e;--err:#ef4444;--radius:14px;--radius-sm:10px;
-    }
-    html,body{height:100%}
-    body{
-      margin:0;background:radial-gradient(1200px 800px at 20% -10%,#162044 0%,#0c1328 45%,#070b18 100%),#060913;
-      color:#e6edf7;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      display:grid;place-items:start center;padding:32px;
-    }
-    .shell{width:min(1100px,100%);display:grid;gap:20px}
-    header{
-      display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--border);
-      background:linear-gradient(180deg,#0e152b,#0a1124);border-radius:var(--radius-sm);
-      position:sticky;top:12px;z-index:3;backdrop-filter:blur(6px)
-    }
-    .brand-logo{
-      width:44px;height:44px;border-radius:10px;background-size:contain;background-repeat:no-repeat;background-position:center;
-      /* Your provided data URI used as a CSS background (no edits needed) */
-      background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPoAAAD6CAYAAACI7Fo9AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAEuWlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSfvu78nIGlkPSdXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQnPz4KPHg6eG1wbWV0YSB4bWxuczp4PSdhZG9iZTpuczptZXRhLyc+...snipped for brevity...);
-      box-shadow:0 0 0 1px #1c2750,0 3px 10px rgba(0,0,0,.45)
-    }
-    h1{font-size:18px;margin:0 0 2px 0}
-    .muted{color:#9fb0cc;font-size:14px}
+    /* ------- SCOPE EVERYTHING TO .fm-checkout ------- */
+    .fm-checkout{font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#e6edf7}
+    .fm-checkout *{box-sizing:border-box}
+    .fm-card{background:#0f1732;border:1px solid #1e2a4a;border-radius:12px;padding:16px}
+    .fm-row{display:grid;gap:12px}
+    .fm-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+    @media (max-width:900px){.fm-grid{grid-template-columns:1fr}}
 
-    .grid{display:grid;grid-template-columns:1.25fr 1fr;gap:20px}
-    @media (max-width:960px){.grid{grid-template-columns:1fr}}
+    .fm-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .fm-logo{width:40px;height:40px;border-radius:8px;background:#0b1431 center/contain no-repeat;border:1px solid #24335c}
+    .fm-title{font-weight:700}
+    .fm-muted{color:#9fb0cc}
 
-    .panel{background:linear-gradient(180deg,#0f1732,#0b1228);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
-    .section{display:grid;gap:12px}
-    label{display:block;font-weight:600;margin-bottom:6px}
-    input[type="text"],input[type="email"],input[type="tel"]{
-      width:100%;padding:12px 14px;border-radius:10px;border:1px solid #25335c;background:#0b1431;color:#e8f0ff;
-      outline:none;box-shadow:inset 0 0 0 9999px rgba(255,255,255,0);
-    }
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .check{
-      display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;
-      padding:12px;border:1px solid #1b284f;border-radius:12px;background:#0b1431;
-    }
-    .check input{margin-top:3px;transform:scale(1.1)}
-    .card-preview{
-      display:flex;align-items:center;gap:12px;padding:14px;border:1px dashed #2a3a6d;border-radius:12px;background:#0c1635
-    }
-    .cc-chip{width:36px;height:24px;border-radius:6px;background:linear-gradient(90deg,#ffe29a,#ffd36b);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
-    .actions{display:flex;gap:10px;flex-wrap:wrap}
-    button{
-      cursor:pointer;border:0;border-radius:12px;padding:12px 16px;font-weight:700;
-      background:linear-gradient(180deg,#34d399,#10b981);color:#062312;box-shadow:0 8px 24px rgba(16,185,129,.25)
-    }
-    button.secondary{background:#0e1733;color:#c6d3f5;border:1px solid #25335c}
-    .disclaimer{font-size:12px;color:#9fb0cc}
-    .footer-note{color:#8aa0c8;font-size:12px;margin-top:6px}
+    .fm-label{font-weight:600;margin:6px 0}
+    .fm-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #25335c;background:#0b1431;color:#e8f0ff}
+    .fm-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+    .fm-check{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px;border:1px solid #1b284f;border-radius:10px;background:#0b1431}
+    .fm-check input{margin-top:2px;transform:scale(1.05)}
+    .fm-note{font-size:12px;color:#95a7c9;margin-top:2px}
+
+    .fm-preview{display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed #2a3a6d;border-radius:10px;background:#0c1635}
+    .fm-chip{width:34px;height:22px;border-radius:5px;background:linear-gradient(90deg,#ffe29a,#ffd36b);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+
+    .fm-actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+    .fm-btn{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:linear-gradient(180deg,#34d399,#10b981);color:#062312}
+    .fm-btn.secondary{background:#0e1733;color:#c6d3f5;border:1px solid #25335c}
+    .fm-small{font-size:12px;color:#9fb0cc;margin-top:6px}
   </style>
-</head>
-<body>
-  <div class="shell">
-    <header>
-      <div class="brand-logo" aria-hidden="true"></div>
+
+  <div class="fm-card">
+    <div class="fm-header">
+      <div class="fm-logo" id="fm-logo" aria-hidden="true"></div>
       <div>
-        <h1>Fat Mule Checkout</h1>
-        <div class="muted">Load your card and jump right into the next game.</div>
-      </div>
-    </header>
-
-    <div class="grid">
-      <!-- Left column: Billing / Contact -->
-      <div class="panel">
-        <div class="section">
-          <div>
-            <label for="email">Email</label>
-            <input id="email" name="email" type="email" placeholder="you@domain.com" autocomplete="email" />
-          </div>
-
-          <!-- You asked for this checkbox directly under Email -->
-          <div class="check">
-            <input id="future-reminders-email" type="checkbox" />
-            <label for="future-reminders-email">
-              Send me reminders before future games
-              <div class="footer-note">We’ll only email about upcoming games and your receipts. Unsubscribe anytime.</div>
-            </label>
-          </div>
-
-          <div class="row">
-            <div>
-              <label for="first">First name</label>
-              <input id="first" type="text" autocomplete="given-name" />
-            </div>
-            <div>
-              <label for="last">Last name</label>
-              <input id="last" type="text" autocomplete="family-name" />
-            </div>
-          </div>
-
-          <div class="row">
-            <div>
-              <label for="phone">Phone (optional)</label>
-              <input id="phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567" />
-            </div>
-            <div>
-              <label for="zip">ZIP</label>
-              <input id="zip" type="text" autocomplete="postal-code" inputmode="numeric" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right column: Card -->
-      <div class="panel">
-        <div class="section">
-          <div class="card-preview" aria-live="polite">
-            <div class="cc-chip"></div>
-            <div>
-              <div class="muted">Card preview</div>
-              <strong id="card-label">•••• •••• •••• 4242</strong>
-            </div>
-          </div>
-
-          <!-- And this one right under the card preview -->
-          <div class="check">
-            <input id="save-card-remind" type="checkbox" />
-            <label for="save-card-remind">
-              Save this card and remind me of future games
-              <div class="footer-note">We’ll securely store your card for quicker checkout and notify you before a new game starts.</div>
-            </label>
-          </div>
-
-          <div class="row">
-            <div>
-              <label for="cc-number">Card number</label>
-              <input id="cc-number" type="text" inputmode="numeric" placeholder="4242 4242 4242 4242" />
-            </div>
-            <div>
-              <label for="cc-exp">Expiry</label>
-              <input id="cc-exp" type="text" inputmode="numeric" placeholder="MM/YY" />
-            </div>
-          </div>
-
-          <div class="row">
-            <div>
-              <label for="cc-cvc">CVC</label>
-              <input id="cc-cvc" type="text" inputmode="numeric" placeholder="CVC" />
-            </div>
-            <div>
-              <label for="cc-name">Name on card</label>
-              <input id="cc-name" type="text" placeholder="Full name" />
-            </div>
-          </div>
-
-          <div class="actions">
-            <button id="pay">Send &amp; Continue</button>
-            <button class="secondary" type="button">Back</button>
-          </div>
-          <div class="disclaimer">By continuing, you agree to Fat Mule’s Terms and Privacy Policy.</div>
-        </div>
+        <div class="fm-title">Fat Mule Checkout</div>
+        <div class="fm-muted">Load your card, then jump into the game.</div>
       </div>
     </div>
 
-    <p class="muted" style="margin:6px 2px 0">Need help? <a href="#" style="color:var(--accent);text-decoration:none">Contact support</a></p>
+    <div class="fm-grid">
+      <!-- Contact / Billing -->
+      <div class="fm-row">
+        <label class="fm-label" for="fm-email">Email</label>
+        <input class="fm-input" id="fm-email" type="email" placeholder="you@domain.com" autocomplete="email"/>
+
+        <!-- as requested: directly under Email -->
+        <label class="fm-check">
+          <input id="fm-future-email" type="checkbox"/>
+          <span>
+            Send me reminders before future games
+            <div class="fm-note">Only game reminders & receipts. Unsubscribe anytime.</div>
+          </span>
+        </label>
+
+        <div class="fm-row2">
+          <div>
+            <label class="fm-label" for="fm-first">First name</label>
+            <input class="fm-input" id="fm-first" type="text" autocomplete="given-name"/>
+          </div>
+          <div>
+            <label class="fm-label" for="fm-last">Last name</label>
+            <input class="fm-input" id="fm-last" type="text" autocomplete="family-name"/>
+          </div>
+        </div>
+
+        <div class="fm-row2">
+          <div>
+            <label class="fm-label" for="fm-phone">Phone (optional)</label>
+            <input class="fm-input" id="fm-phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567"/>
+          </div>
+          <div>
+            <label class="fm-label" for="fm-zip">ZIP</label>
+            <input class="fm-input" id="fm-zip" type="text" inputmode="numeric" autocomplete="postal-code"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card -->
+      <div class="fm-row">
+        <div class="fm-preview" aria-live="polite">
+          <div class="fm-chip"></div>
+          <div>
+            <div class="fm-muted">Card preview</div>
+            <strong id="fm-card-label">•••• •••• •••• 4242</strong>
+          </div>
+        </div>
+
+        <!-- as requested: right under card preview -->
+        <label class="fm-check">
+          <input id="fm-save-remind" type="checkbox"/>
+          <span>
+            Save this card and remind me of future games
+            <div class="fm-note">Store card securely for faster checkout and reminders.</div>
+          </span>
+        </label>
+
+        <div class="fm-row2">
+          <div>
+            <label class="fm-label" for="fm-cc">Card number</label>
+            <input class="fm-input" id="fm-cc" type="text" inputmode="numeric" placeholder="4242 4242 4242 4242"/>
+          </div>
+          <div>
+            <label class="fm-label" for="fm-exp">Expiry</label>
+            <input class="fm-input" id="fm-exp" type="text" inputmode="numeric" placeholder="MM/YY"/>
+          </div>
+        </div>
+
+        <div class="fm-row2">
+          <div>
+            <label class="fm-label" for="fm-cvc">CVC</label>
+            <input class="fm-input" id="fm-cvc" type="text" inputmode="numeric" placeholder="CVC"/>
+          </div>
+          <div>
+            <label class="fm-label" for="fm-name">Name on card</label>
+            <input class="fm-input" id="fm-name" type="text" placeholder="Full name"/>
+          </div>
+        </div>
+
+        <div class="fm-actions">
+          <button class="fm-btn" id="fm-submit">Send &amp; Continue</button>
+          <button class="fm-btn secondary" type="button" id="fm-cancel">Cancel</button>
+        </div>
+        <div class="fm-small">By continuing, you agree to Fat Mule’s Terms and Privacy Policy.</div>
+      </div>
+    </div>
   </div>
 
   <script>
-    // Tiny helper: mirror the last 4 digits typed into the card preview
-    const number = document.getElementById('cc-number');
-    const label  = document.getElementById('card-label');
-    number.addEventLi
+    (function(){
+      const root   = document.currentScript.closest('.fm-checkout');
+      const logoEl = root.querySelector('#fm-logo');
+      const num    = root.querySelector('#fm-cc');
+      const label  = root.querySelector('#fm-card-label');
+
+      // Optional inline logo: set data-logo="data:image/png;base64,..." on the container.
+      const uri = root.getAttribute('data-logo');
+      if (uri) logoEl.style.backgroundImage = `url("${uri}")`;
+
+      // Mirror last 4 digits into preview (local only)
+      num.addEventListener('input', ()=>{
+        const digits = (num.value || '').replace(/\D/g,'').slice(-4);
+        label.textContent = digits ? `•••• •••• •••• ${digits}` : '•••• •••• •••• 4242';
+      });
+
+      // Dispatch custom events instead of navigating (so your builder controls flow)
+      root.querySelector('#fm-submit').addEventListener('click', (e)=>{
+        e.preventDefault();
+        const detail = {
+          email: root.querySelector('#fm-email').value,
+          first: root.querySelector('#fm-first').value,
+          last : root.querySelector('#fm-last').value,
+          phone: root.querySelector('#fm-phone').value,
+          zip  : root.querySelector('#fm-zip').value,
+          cc   : root.querySelector('#fm-cc').value,
+          exp  : root.querySelector('#fm-exp').value,
+          cvc  : root.querySelector('#fm-cvc').value,
+          name : root.querySelector('#fm-name').value,
+          futureEmail: root.querySelector('#fm-future-email').checked,
+          saveCardRemind: root.querySelector('#fm-save-remind').checked
+        };
+        root.dispatchEvent(new CustomEvent('fm:checkoutSubmit',{bubbles:true,detail}));
+      });
+
+      root.querySelector('#fm-cancel').addEventListener('click', (e)=>{
+        e.preventDefault();
+        root.dispatchEvent(new CustomEvent('fm:checkoutCancel',{bubbles:true}));
+      });
+    })();
+  </script>
+</div>
