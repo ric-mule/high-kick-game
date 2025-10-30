@@ -1,173 +1,667 @@
-<!-- Fat Mule Checkout (fully sandboxed / no global styles) -->
-<div class="fm-checkout" id="fm-checkout" data-logo="">
-  <style>
-    /* ------- SCOPE EVERYTHING TO .fm-checkout ------- */
-    .fm-checkout{font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#e6edf7}
-    .fm-checkout *{box-sizing:border-box}
-    .fm-card{background:#0f1732;border:1px solid #1e2a4a;border-radius:12px;padding:16px}
-    .fm-row{display:grid;gap:12px}
-    .fm-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
-    @media (max-width:900px){.fm-grid{grid-template-columns:1fr}}
 
-    .fm-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-    .fm-logo{width:40px;height:40px;border-radius:8px;background:#0b1431 center/contain no-repeat;border:1px solid #24335c}
-    .fm-title{font-weight:700}
-    .fm-muted{color:#9fb0cc}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Build Your Fat Mule Bingo Card — Holiday Edition</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  /* ================================
+     HOLIDAY THEME — COLORS & BACKDROP
+     ================================ */
+  :root{
+    --bg1:#061a1a;         /* deep evergreen */
+    --bg2:#0b2a2a;         /* teal pine */
+    --frost:#0d3640;       /* cool stroke */
+    --red:#e11d48;         /* cranberry */
+    --green:#16a34a;       /* pine */
+    --gold:#fbbf24;        /* warm gold */
+    --snow:rgba(255,255,255,.7);
+  }
 
-    .fm-label{font-weight:600;margin:6px 0}
-    .fm-input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #25335c;background:#0b1431;color:#e8f0ff}
-    .fm-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 800px at 10% -10%, #103, transparent 60%),
+      radial-gradient(1000px 700px at 90% -20%, #013, transparent 60%),
+      linear-gradient(180deg,var(--bg1),var(--bg2));
+    min-height:100vh;
+    color:#f8fafc;
+  }
 
-    .fm-check{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px;border:1px solid #1b284f;border-radius:10px;background:#0b1431}
-    .fm-check input{margin-top:2px;transform:scale(1.05)}
-    .fm-note{font-size:12px;color:#95a7c9;margin-top:2px}
+  /* Subtle snowfall */
+  .snow{
+    pointer-events:none;position:fixed;inset:0;z-index:0;opacity:.4;
+    background-image:
+      radial-gradient(2px 2px at 20px 30px, var(--snow) 50%, transparent 51%),
+      radial-gradient(2px 2px at 80px 120px, var(--snow) 50%, transparent 51%),
+      radial-gradient(2px 2px at 200px 80px, var(--snow) 50%, transparent 51%),
+      radial-gradient(2px 2px at 320px 200px, var(--snow) 50%, transparent 51%),
+      radial-gradient(2px 2px at 480px 100px, var(--snow) 50%, transparent 51%);
+    background-size: 600px 600px, 700px 700px, 800px 800px, 900px 900px, 1000px 1000px;
+    animation:snowfall 18s linear infinite;
+  }
+  @keyframes snowfall{
+    0%{background-position:0 0, 0 0, 0 0, 0 0, 0 0;}
+    100%{background-position:0 600px, 0 700px, 0 800px, 0 900px, 0 1000px;}
+  }
 
-    .fm-preview{display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed #2a3a6d;border-radius:10px;background:#0c1635}
-    .fm-chip{width:34px;height:22px;border-radius:5px;background:linear-gradient(90deg,#ffe29a,#ffd36b);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  /* ===== Confetti Pop (no libs) ===== */
+  #confetti-layer{
+    position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:9999;
+  }
+  .confetti{
+    position:absolute; width:10px; height:14px; opacity:0; border-radius:2px;
+    will-change:transform, opacity;
+    animation:confetti-fall var(--dur,900ms) ease-out forwards;
+  }
+  @keyframes confetti-fall{
+    0%   { transform: translate3d(var(--x,0), -10%, 0) rotate(0deg);   opacity:1; }
+    100% { transform: translate3d(calc(var(--x,0) + var(--dx,0)), 110%, 0) rotate(720deg); opacity:0; }
+  }
 
-    .fm-actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
-    .fm-btn{cursor:pointer;border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:linear-gradient(180deg,#34d399,#10b981);color:#062312}
-    .fm-btn.secondary{background:#0e1733;color:#c6d3f5;border:1px solid #25335c}
-    .fm-small{font-size:12px;color:#9fb0cc;margin-top:6px}
-  </style>
+  /* Container panel (frosted card) */
+  #billiobingo{
+    position:relative; z-index:1;
+    max-width:1100px;margin:0 auto;padding:18px 18px 30px;
+  }
+  .frost{
+    background:rgba(6,18,20,.72);
+    backdrop-filter: blur(6px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+    padding:18px;
+  }
 
-  <div class="fm-card">
-    <div class="fm-header">
-      <div class="fm-logo" id="fm-logo" aria-hidden="true"></div>
-      <div>
-        <div class="fm-title">Fat Mule Checkout</div>
-        <div class="fm-muted">Load your card, then jump into the game.</div>
-      </div>
+  /* Base */
+  #billiobingo *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+  #billiobingo h1{margin:6px 0 8px;font-size:28px;letter-spacing:.3px}
+  #billiobingo h2{margin:16px 0 8px;font-size:18px;color:#e2e8f0}
+  #billiobingo .muted{color:#b6c2d1;font-size:12px}
+  #billiobingo .two-col{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
+  @media (max-width:900px){#billiobingo .two-col{grid-template-columns:1fr}}
+
+  /* Garland header strip */
+  .garland{
+    margin:4px 0 12px; height:46px; display:flex; align-items:flex-end; gap:10px;
+    position:relative;
+  }
+  .garland .lights{width:100%; height:36px}
+  .tagline{
+    position:absolute; right:8px; top:-6px;
+    background:linear-gradient(180deg,#134e4a,#052e2b);
+    color:#eafff8; padding:6px 10px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.12); font-weight:700; font-size:12px;
+    box-shadow:0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  /* --- NUM PAD --- */
+  #billiobingo .pad{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+  #billiobingo .num{
+    border:1px solid #34525a;border-radius:8px;padding:12px 0;text-align:center;
+    cursor:pointer;user-select:none;background:rgba(255,255,255,.06);color:#e6f6ff;font-weight:800;font-size:15px;letter-spacing:.2px;
+    transition:transform .12s, background .15s, color .15s, border-color .15s, box-shadow .15s;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 1px 1px rgba(0,0,0,.25);
+  }
+  #billiobingo .num:hover{background:rgba(255,255,255,.12);border-color:#4aa3b2;box-shadow:0 0 0 3px rgba(45,212,191,.18);transform:translateY(-1px)}
+  #billiobingo .num.sel{
+    background:linear-gradient(180deg,#16a34a,#0e7a3a);
+    color:#fff;border-color:#0e7a3a;box-shadow:0 0 0 3px rgba(22,163,74,.28), 0 6px 16px rgba(0,0,0,.25)
+  }
+
+  /* Controls / buttons */
+  #billiobingo .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 14px}
+  #billiobingo .btn{
+    background:linear-gradient(180deg,#0f172a,#0b1220); color:#fff;border:1px solid #203041;border-radius:10px;
+    padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.25)
+  }
+  #billiobingo .btn:hover{filter:brightness(1.08)}
+  #randBtn{
+    background:linear-gradient(180deg,#fce7f3,#f9a8d4 60%, #fb7185);
+    color:#2b0c14;border-color:#be185d;text-shadow:0 1px 0 rgba(255,255,255,.35)
+  }
+  #clearBtn{
+    background:linear-gradient(180deg,#e2e8f0,#cbd5e1); color:#0b1220;border-color:#64748b
+  }
+  #billiobingo .pill{
+    padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);color:#e6f6ff;font-weight:800;border:1px solid rgba(255,255,255,.18)
+  }
+  #billiobingo .warn{color:#fda4af}
+
+  /* Preview tables */
+  #billiobingo .grid{
+    border-collapse:separate;border-spacing:0;width:100%;max-width:480px;overflow:hidden;border-radius:12px;
+    box-shadow:0 10px 24px rgba(0,0,0,.35)
+  }
+  #billiobingo .grid th{
+    background:linear-gradient(180deg,#134e4a,#0b2a2a); color:#eafff8; padding:12px;
+    border-bottom:1px solid rgba(255,255,255,.12); font-size:15px; letter-spacing:.6px
+  }
+  #billiobingo .grid td{
+    background:rgba(255,255,255,.06); color:#e6f6ff; font-weight:700; padding:12px;
+    border:1px solid rgba(255,255,255,.06)
+  }
+
+  /* Mini preview */
+  #billiobingo .mini{border-collapse:separate;border-spacing:0;width:100%;margin-top:8px;overflow:hidden;border-radius:10px}
+  #billiobingo .mini td,#billiobingo .mini th{
+    border:1px solid rgba(255,255,255,.08);padding:6px;text-align:center;font-size:12px;background:rgba(255,255,255,.04);color:#dbeafe
+  }
+
+  /* Inputs */
+  #billiobingo input, #billiobingo textarea{
+    width:100%;padding:10px 12px;border:1px solid #2a4147;border-radius:8px;background:rgba(255,255,255,.06);color:#e7f5ff
+  }
+  #billiobingo input::placeholder{color:#98a6b3}
+  #billiobingo label{font-size:13px;margin:8px 0 4px;display:block;color:#e2e8f0}
+
+  /* Logo block */
+  #billiobingo .brand{display:flex;align-items:center;gap:12px;margin:10px 0 6px}
+  #billiobingo .brand img{height:52px;width:auto;display:block;filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
+  .brand h1{display:flex;align-items:center;gap:8px}
+  .brand h1 .holly{
+    font-size:20px; background:linear-gradient(180deg,#14532d,#052e2b); padding:4px 10px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.12)
+  }
+
+  /* Remember-me micro styles */
+  #billiobingo .remember-row{display:flex;gap:8px;align-items:center;margin:6px 0 4px}
+  #billiobingo .forget-link{font-size:12px;color:#cbd5e1;text-decoration:underline;cursor:pointer}
+
+  /* Sections */
+  #billiobingo .section{margin-top:18px}
+  .holiday-footer{
+    margin-top:10px;
+    display:flex; align-items:center; gap:10px; color:#e2e8f0; font-size:12px
+  }
+
+  /* Footer spacing tightened */
+  #billiobingo .footer{
+    display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;
+  }
+
+  /* Opt-in checkbox styling */
+  #billiobingo .optin input[type="checkbox"]{ width:16px;height:16px;margin-top:2px }
+  #billiobingo .optin span{ font-size:12px;color:#cbd5e1;line-height:1.25 }
+</style>
+</head>
+<body>
+<div class="snow" aria-hidden="true"></div>
+<div id="confetti-layer" aria-hidden="true"></div>
+
+<div id="billiobingo">
+  <div class="frost">
+    <!-- Garland / Lights -->
+    <div class="garland" aria-hidden="true">
+      <svg class="lights" viewBox="0 0 600 60" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="glowR" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ff8fa3"/><stop offset="1" stop-color="#e11d48"/></linearGradient>
+          <linearGradient id="glowG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#86efac"/><stop offset="1" stop-color="#16a34a"/></linearGradient>
+          <linearGradient id="glowY" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/></linearGradient>
+        </defs>
+        <path d="M0,20 C100,60 200,-10 300,20 400,50 500,-10 600,20" fill="none" stroke="#134e4a" stroke-width="4"/>
+        <g>
+          <ellipse cx="60" cy="30" rx="8" ry="12" fill="url(#glowR)"/>
+          <ellipse cx="140" cy="18" rx="8" ry="12" fill="url(#glowG)"/>
+          <ellipse cx="220" cy="32" rx="8" ry="12" fill="url(#glowY)"/>
+          <ellipse cx="300" cy="18" rx="8" ry="12" fill="url(#glowR)"/>
+          <ellipse cx="380" cy="32" rx="8" ry="12" fill="url(#glowG)"/>
+          <ellipse cx="460" cy="18" rx="8" ry="12" fill="url(#glowY)"/>
+          <ellipse cx="540" cy="30" rx="8" ry="12" fill="url(#glowR)"/>
+        </g>
+      </svg>
+      <span class="tagline">Holiday Edition ❄️</span>
     </div>
 
-    <div class="fm-grid">
-      <!-- Contact / Billing -->
-      <div class="fm-row">
-        <label class="fm-label" for="fm-email">Email</label>
-        <input class="fm-input" id="fm-email" type="email" placeholder="you@domain.com" autocomplete="email"/>
+    <!-- 1) LOGO -->
+    <div class="brand">
+      <img src="./assets/fat-mule-records-logo.png" alt="Fat Mule Records logo">
+      <h1>Build Your Fat Mule Bingo Card <span class="holly">🎄✨</span></h1>
+    </div>
 
-        <!-- as requested: directly under Email -->
-        <label class="fm-check">
-          <input id="fm-future-email" type="checkbox"/>
-          <span>
-            Send me reminders before future games
-            <div class="fm-note">Only game reminders & receipts. Unsubscribe anytime.</div>
-          </span>
+    <p class="muted">Pick <strong>exactly 25 numbers</strong> from 1–100. Preview updates live. Then submit — we’ll log it to the sheet and send you to the Game Room.</p>
+
+    <div class="two-col">
+      <!-- LEFT: Number pad -->
+      <section>
+        <div class="bar">
+          <button id="randBtn" class="btn" type="button">🎁 Random 25</button>
+          <button id="clearBtn" class="btn" type="button">🧹 Clear</button>
+          <span id="count" class="pill">Selected: 0 / 25</span>
+          <span id="alert" class="muted warn"></span>
+        </div>
+        <div id="pad" class="pad" aria-label="Pick numbers 1 to 100"></div>
+      </section>
+
+      <!-- RIGHT: Live preview -->
+      <section>
+        <h2>Card Preview</h2>
+        <table class="grid" aria-label="5 by 5 card preview">
+          <thead>
+            <tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr>
+          </thead>
+          <tbody id="previewTop"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- ===== Bottom Form ===== -->
+    <div class="section">
+      <h2>Submit Your Card <span class="badge">Good Luck &amp; Good Cheer 🎅🏽</span></h2>
+
+      <form id="bzForm" method="POST" autocomplete="on" novalidate>
+        <!-- Visible fields -->
+        <label for="f_name">Name</label>
+        <input id="f_name" name="name" placeholder="Your name" required autocomplete="name">
+
+        <label for="f_email">Email</label>
+        <input id="f_email" name="email" type="email" placeholder="you@example.com" required autocomplete="email">
+
+        <!-- Single, clear opt-in (future reminders only) -->
+        <label class="optin" for="f_notify" style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 4px;">
+          <input type="checkbox" id="f_notify" checked>
+          <span>Send me reminders before future games.</span>
         </label>
 
-        <div class="fm-row2">
-          <div>
-            <label class="fm-label" for="fm-first">First name</label>
-            <input class="fm-input" id="fm-first" type="text" autocomplete="given-name"/>
-          </div>
-          <div>
-            <label class="fm-label" for="fm-last">Last name</label>
-            <input class="fm-input" id="fm-last" type="text" autocomplete="family-name"/>
-          </div>
+        <label for="f_tiktok">TikTok username</label>
+        <input id="f_tiktok" name="tiktok" placeholder="@yourusername" autocomplete="username">
+
+        <!-- ✅ REMEMBER ME -->
+        <div class="remember-row">
+          <input id="f_remember" type="checkbox" aria-label="Keep me on this device, baby">
+          <label for="f_remember" style="margin:0;">Keep me on this device, baby</label>
+          <span id="forget_link" class="forget-link" role="button" tabindex="0">Nah, forget me here</span>
         </div>
 
-        <div class="fm-row2">
-          <div>
-            <label class="fm-label" for="fm-phone">Phone (optional)</label>
-            <input class="fm-input" id="fm-phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567"/>
-          </div>
-          <div>
-            <label class="fm-label" for="fm-zip">ZIP</label>
-            <input class="fm-input" id="fm-zip" type="text" inputmode="numeric" autocomplete="postal-code"/>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card -->
-      <div class="fm-row">
-        <div class="fm-preview" aria-live="polite">
-          <div class="fm-chip"></div>
-          <div>
-            <div class="fm-muted">Card preview</div>
-            <strong id="fm-card-label">•••• •••• •••• 4242</strong>
-          </div>
+        <div style="display:flex;gap:10px;align-items:center;margin:8px 0">
+          <input id="f_locked" type="checkbox">
+          <label for="f_locked" style="margin:0">Save card</label>
         </div>
 
-        <!-- as requested: right under card preview -->
-        <label class="fm-check">
-          <input id="fm-save-remind" type="checkbox"/>
-          <span>
-            Save this card and remind me of future games
-            <div class="fm-note">Store card securely for faster checkout and reminders.</div>
-          </span>
-        </label>
+        <label for="f_game_lock">Game Lock #</label>
+        <input id="f_game_lock" name="game_lock" placeholder="e.g., 7421">
 
-        <div class="fm-row2">
-          <div>
-            <label class="fm-label" for="fm-cc">Card number</label>
-            <input class="fm-input" id="fm-cc" type="text" inputmode="numeric" placeholder="4242 4242 4242 4242"/>
-          </div>
-          <div>
-            <label class="fm-label" for="fm-exp">Expiry</label>
-            <input class="fm-input" id="fm-exp" type="text" inputmode="numeric" placeholder="MM/YY"/>
-          </div>
+        <!-- HIDDEN payloads -->
+        <input type="hidden" id="f_selected_hidden" name="selected_numbers">
+        <input type="hidden" id="f_json_hidden" name="grid_json">
+        <input type="hidden" id="f_locked_hidden" name="locked" value="false">
+
+        <!-- Email-friendly rows -->
+        <input type="hidden" id="f_row1" name="row_1">
+        <input type="hidden" id="f_row2" name="row_2">
+        <input type="hidden" id="f_row3" name="row_3">
+        <input type="hidden" id="f_row4" name="row_4">
+        <input type="hidden" id="f_row5" name="row_5">
+
+        <!-- Optional BINGO columns -->
+        <input type="hidden" id="f_colB" name="col_B">
+        <input type="hidden" id="f_colI" name="col_I">
+        <input type="hidden" id="f_colN" name="col_N">
+        <input type="hidden" id="f_colG" name="col_G">
+        <input type="hidden" id="f_colO" name="col_O">
+
+        <!-- Mini preview -->
+        <table class="mini" aria-label="5 by 5 card preview (form)">
+          <thead>
+            <tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr>
+          </thead>
+          <tbody id="previewBottom"></tbody>
+        </table>
+
+        <div class="footer">
+          <button class="btn" type="submit">Send &amp; Continue ➜</button>
+          <span id="msg" class="muted"></span>
         </div>
 
-        <div class="fm-row2">
-          <div>
-            <label class="fm-label" for="fm-cvc">CVC</label>
-            <input class="fm-input" id="fm-cvc" type="text" inputmode="numeric" placeholder="CVC"/>
-          </div>
-          <div>
-            <label class="fm-label" for="fm-name">Name on card</label>
-            <input class="fm-input" id="fm-name" type="text" placeholder="Full name"/>
-          </div>
-        </div>
+        <p class="muted" style="margin-top:6px;">
+          By sendin’ your card, you’re steppin’ into the Fat Mule fam—where the blues stay loud, the games stay live, and the good times roll. Unsubscribe anytime.
+        </p>
+      </form>
 
-        <div class="fm-actions">
-          <button class="fm-btn" id="fm-submit">Send &amp; Continue</button>
-          <button class="fm-btn secondary" type="button" id="fm-cancel">Cancel</button>
-        </div>
-        <div class="fm-small">By continuing, you agree to Fat Mule’s Terms and Privacy Policy.</div>
+      <p class="muted">After submit, you’ll be redirected to the Game Room.</p>
+
+      <div class="holiday-footer">
+        <span>❄️ From our juke joint to yours — happy holidays and lucky numbers.</span>
       </div>
     </div>
   </div>
-
-  <script>
-    (function(){
-      const root   = document.currentScript.closest('.fm-checkout');
-      const logoEl = root.querySelector('#fm-logo');
-      const num    = root.querySelector('#fm-cc');
-      const label  = root.querySelector('#fm-card-label');
-
-      // Optional inline logo: set data-logo="data:image/png;base64,..." on the container.
-      const uri = root.getAttribute('data-logo');
-      if (uri) logoEl.style.backgroundImage = `url("${uri}")`;
-
-      // Mirror last 4 digits into preview (local only)
-      num.addEventListener('input', ()=>{
-        const digits = (num.value || '').replace(/\D/g,'').slice(-4);
-        label.textContent = digits ? `•••• •••• •••• ${digits}` : '•••• •••• •••• 4242';
-      });
-
-      // Dispatch custom events instead of navigating (so your builder controls flow)
-      root.querySelector('#fm-submit').addEventListener('click', (e)=>{
-        e.preventDefault();
-        const detail = {
-          email: root.querySelector('#fm-email').value,
-          first: root.querySelector('#fm-first').value,
-          last : root.querySelector('#fm-last').value,
-          phone: root.querySelector('#fm-phone').value,
-          zip  : root.querySelector('#fm-zip').value,
-          cc   : root.querySelector('#fm-cc').value,
-          exp  : root.querySelector('#fm-exp').value,
-          cvc  : root.querySelector('#fm-cvc').value,
-          name : root.querySelector('#fm-name').value,
-          futureEmail: root.querySelector('#fm-future-email').checked,
-          saveCardRemind: root.querySelector('#fm-save-remind').checked
-        };
-        root.dispatchEvent(new CustomEvent('fm:checkoutSubmit',{bubbles:true,detail}));
-      });
-
-      root.querySelector('#fm-cancel').addEventListener('click', (e)=>{
-        e.preventDefault();
-        root.dispatchEvent(new CustomEvent('fm:checkoutCancel',{bubbles:true}));
-      });
-    })();
-  </script>
 </div>
+
+<script>
+  (function(){
+    const GAME_ROOM_URL = 'game-room.html';
+    /* Your Google Apps Script /exec URL (deployed for Anyone) */
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbWht_tS3LKLaN0W95jOgJpV09sovOsCX7WfdYUVvwwQBB7vIPTioJQWp6xIWaKE4Xuw/exec';
+
+    // --- helpers
+    function normalizeHandle(s){
+      s = String(s||'').trim();
+      if (!s) return '';
+      return s.startsWith('@') ? s : '@' + s.replace(/^@+/, '');
+    }
+
+    const padEl = document.getElementById('pad');
+    const previewTop = document.getElementById('previewTop');
+    const previewBottom = document.getElementById('previewBottom');
+    const alertEl = document.getElementById('alert');
+    const msgEl = document.getElementById('msg');
+
+    // Form refs
+    const form = document.getElementById('bzForm');
+    const fName = document.getElementById('f_name');
+    const fEmail = document.getElementById('f_email');
+    const fTikTok = document.getElementById('f_tiktok');
+    const fLocked = document.getElementById('f_locked');
+    const fLockedHidden = document.getElementById('f_locked_hidden');
+    const fGameLock = document.getElementById('f_game_lock');
+    const fSelectedHidden = document.getElementById('f_selected_hidden');
+    const fJsonHidden = document.getElementById('f_json_hidden');
+
+    const fRow1 = document.getElementById('f_row1');
+    const fRow2 = document.getElementById('f_row2');
+    const fRow3 = document.getElementById('f_row3');
+    const fRow4 = document.getElementById('f_row4');
+    const fRow5 = document.getElementById('f_row5');
+    const fColB = document.getElementById('f_colB');
+    const fColI = document.getElementById('f_colI');
+    const fColN = document.getElementById('f_colN');
+    const fColG = document.getElementById('f_colG');
+    const fColO = document.getElementById('f_colO');
+
+    // ✅ REMEMBER ME refs
+    const fRemember = document.getElementById('f_remember');
+    const forgetLink = document.getElementById('forget_link');
+    const REM_KEY = 'bingo_player_v1';
+
+    // NEW: single opt-in checkbox
+    const fNotify = document.getElementById('f_notify');
+
+    const state = { picks:new Set(), grid:[] };
+
+    // Prefill from localStorage
+    try {
+      const saved = JSON.parse(localStorage.getItem(REM_KEY) || '{}');
+      if (saved && (saved.name || saved.email || saved.tiktok)) {
+        if (saved.name)   fName.value = saved.name;
+        if (saved.email)  fEmail.value = saved.email;
+        if (saved.tiktok) fTikTok.value = saved.tiktok;
+        if (fRemember) fRemember.checked = true;
+      }
+    } catch(e){}
+
+    // Build number pad 1..100
+    for (let n=1;n<=100;n++){
+      const b=document.createElement('div');
+      b.className='num'; b.textContent=n; b.dataset.n=n;
+      b.addEventListener('click',()=>togglePick(n,b));
+      padEl.appendChild(b);
+    }
+
+    function togglePick(n, btn){
+      alertEl.textContent='';
+      if(state.picks.has(n)){ state.picks.delete(n); btn.classList.remove('sel'); }
+      else{
+        if(state.picks.size>=25){ alertEl.textContent='Select exactly 25.'; return; }
+        state.picks.add(n); btn.classList.add('sel');
+      }
+      syncAll();
+    }
+
+    function buildGrid(){
+      let arr = Array.from(state.picks).sort((a,b)=>a-b);
+      while (arr.length < 25) arr.push('');
+      const g=[]; let k=0;
+      for (let r=0;r<5;r++){ const row=[]; for (let c=0;c<5;c++){ row.push(arr[k++]); } g.push(row); }
+      state.grid = g;
+    }
+
+    function render(tbody){
+      tbody.innerHTML = '';
+      const g = state.grid;
+      for (let r=0;r<5;r++){
+        const tr=document.createElement('tr');
+        for (let c=0;c<5;c++){
+          const td=document.createElement('td');
+          td.textContent = g[r][c];
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    function rowsAndCols(g){
+      const rows = g.map(r => r.map(x => x === '' ? '' : String(x)).join(' '));
+      const cols = [0,1,2,3,4].map(c => g.map(r => r[c]).map(x => x === '' ? '' : String(x)).join(' '));
+      return { rows, cols };
+    }
+
+    function payload(){
+      return {
+        page:'builder',
+        type:'number-bingo-1-100',
+        selected: Array.from(state.picks).sort((a,b)=>a-b),
+        grid: state.grid,
+        user: {
+          name:   fName.value.trim(),
+          email:  fEmail.value.trim(),
+          tiktok: normalizeHandle(fTikTok.value.trim())
+        },
+        locked:    fLocked.checked,
+        game_lock: fGameLock.value.trim(),
+        timestamp: Date.now(),
+        submitted_at: new Date().toISOString(),
+        ua: navigator.userAgent,
+        notify: !!(fNotify && fNotify.checked)  // future reminders only
+      };
+    }
+
+    function pushIntoForm(){
+      const pl = payload();
+
+      fSelectedHidden.value = pl.selected.join(', ');
+      fJsonHidden.value     = JSON.stringify(pl, null, 2);
+      fLockedHidden.value   = pl.locked ? 'true' : 'false';
+
+      const { rows, cols } = rowsAndCols(pl.grid);
+      fRow1.value = rows[0]; fRow2.value = rows[1]; fRow3.value = rows[2]; fRow4.value = rows[3]; fRow5.value = rows[4];
+      fColB.value = cols[0]; fColI.value = cols[1]; fColN.value = cols[2]; fColG.value = cols[3]; fColO.value = cols[4];
+
+      try { localStorage.setItem('bingo_card_last', JSON.stringify(pl)); } catch(e) {}
+    }
+
+    function syncAll(){
+      document.getElementById('count').textContent = `Selected: ${state.picks.size} / 25`;
+      buildGrid();
+      render(previewTop);
+      render(previewBottom);
+      pushIntoForm();
+    }
+
+    // Build flat key/value payload for Apps Script columns
+    function buildFlatPayload(pl){
+      const { rows, cols } = rowsAndCols(pl.grid);
+      return {
+        name:   pl.user.name,
+        email:  pl.user.email,
+        tiktok: pl.user.tiktok,
+        selected_numbers: pl.selected.join(', '),
+        grid_json: JSON.stringify(pl),
+        locked: pl.locked ? 'true' : 'false',
+        game_lock: pl.game_lock,
+        page: pl.page,
+        type: pl.type,
+        timestamp: String(pl.timestamp),
+        submitted_at: pl.submitted_at,
+        ua: pl.ua,
+        notify: pl.notify ? 'true' : 'false',
+        row_1: rows[0], row_2: rows[1], row_3: rows[2], row_4: rows[3], row_5: rows[4],
+        col_B: cols[0], col_I: cols[1], col_N: cols[2], col_G: cols[3], col_O: cols[4],
+      };
+    }
+
+    // Confetti
+    function celebrateConfetti(bursts = 1){
+      const layer = document.getElementById('confetti-layer') || (() => {
+        const d = document.createElement('div'); d.id = 'confetti-layer'; document.body.appendChild(d); return d;
+      })();
+
+      const colors = ['#F87171','#FBBF24','#34D399','#60A5FA','#A78BFA','#F472B6','#FDE68A','#22D3EE'];
+      const W = window.innerWidth;
+
+      for (let b=0; b<bursts; b++){
+        const count = 120;
+        for (let i=0; i<count; i++){
+          const el = document.createElement('div');
+          el.className = 'confetti';
+          const size = 8 + Math.random()*8;
+          el.style.width  = size + 'px';
+          el.style.height = (size*1.35) + 'px';
+          el.style.background = Math.random() < 0.25
+            ? `linear-gradient(180deg, ${colors[i%colors.length]}, #fff)`
+            : colors[(i + Math.floor(Math.random()*colors.length))%colors.length];
+
+          const startX = (Math.random()*W) + 'px';
+          const drift  = (Math.random()*160 - 80) + 'px';
+          const dur    = (700 + Math.random()*900) + 'ms';
+
+          el.style.setProperty('--x', startX);
+          el.style.setProperty('--dx', drift);
+          el.style.setProperty('--dur', dur);
+          el.style.left = 0;
+
+          el.style.transform = `translate3d(${startX},-10%,0) rotate(${Math.random()*360}deg)`;
+          el.addEventListener('animationend', () => el.remove());
+          layer.appendChild(el);
+        }
+      }
+    }
+
+    // Google Sheets POST
+    function postToGoogle(pl){
+      const flat = buildFlatPayload(pl);
+
+      try{
+        if (navigator.sendBeacon) {
+          const body = new URLSearchParams(flat);
+          const ok = navigator.sendBeacon(
+            GOOGLE_SCRIPT_URL,
+            new Blob([body.toString()], { type:'application/x-www-form-urlencoded' })
+          );
+          if (ok) return Promise.resolve(true);
+        }
+      }catch(_){}
+
+      try{
+        const fd = new FormData();
+        for (const [k,v] of Object.entries(flat)) fd.append(k, v);
+
+        return fetch(GOOGLE_SCRIPT_URL, {
+          method:'POST',
+          body: fd,
+          mode: 'no-cors',
+          credentials:'omit',
+          keepalive:true
+        }).then(()=>true).catch(()=>true);
+      }catch(__){
+        return Promise.resolve(true);
+      }
+    }
+
+    // Buttons
+    document.getElementById('randBtn').addEventListener('click', ()=>{
+      state.picks.clear();
+      padEl.querySelectorAll('.num.sel').forEach(el=>el.classList.remove('sel'));
+      const pool=[...Array(100)].map((_,i)=>i+1);
+      for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+      pool.slice(0,25).forEach(n=>{
+        state.picks.add(n);
+        const cell=padEl.querySelector(`.num[data-n="${n}"]`); if(cell) cell.classList.add('sel');
+      });
+      syncAll();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{
+      state.picks.clear();
+      padEl.querySelectorAll('.num.sel').forEach(el=>el.classList.remove('sel'));
+      syncAll();
+    });
+
+    // Keep payload in sync with form typing
+    ['input','change'].forEach(evt=>{
+      fName.addEventListener(evt,pushIntoForm);
+      fEmail.addEventListener(evt,pushIntoForm);
+      fTikTok.addEventListener(evt,()=>{ fTikTok.value = normalizeHandle(fTikTok.value); pushIntoForm(); });
+      fLocked.addEventListener(evt,pushIntoForm);
+      fGameLock.addEventListener(evt,pushIntoForm);
+      if (fNotify) fNotify.addEventListener(evt,pushIntoForm);
+    });
+
+    // Remember-me logic
+    function saveRemembered(){
+      if (!fRemember || !fRemember.checked) return;
+      const data = {
+        name: fName.value.trim(),
+        email: fEmail.value.trim(),
+        tiktok: normalizeHandle(fTikTok.value.trim())
+      };
+      try { localStorage.setItem(REM_KEY, JSON.stringify(data)); } catch(e){}
+    }
+
+    if (fRemember) {
+      [fName,fEmail,fTikTok].forEach(el=>{
+        el.addEventListener('input', saveRemembered);
+        el.addEventListener('change', saveRemembered);
+      });
+      fRemember.addEventListener('change', ()=>{
+        if (!fRemember.checked) localStorage.removeItem(REM_KEY);
+        else saveRemembered();
+      });
+    }
+
+    if (forgetLink) {
+      const clearSaved = ()=>{
+        localStorage.removeItem(REM_KEY);
+        if (fRemember) fRemember.checked = false;
+        alert('All right—info cleared on this device.');
+      };
+      forgetLink.addEventListener('click', e=>{ e.preventDefault(); clearSaved(); });
+      forgetLink.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); clearSaved(); }});
+    }
+
+    // Submit -> Google Sheets -> Redirect
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+
+      if (!fName.value.trim() || !fEmail.value.trim()){
+        alertEl.textContent = 'Name and email are required.';
+        return;
+      }
+
+      if (state.picks.size !== 25) {
+        alertEl.textContent = 'Please select exactly 25 numbers before submitting.';
+        return;
+      }
+
+      pushIntoForm();
+
+      const pl = payload();
+      msgEl.textContent = 'Sending…';
+
+      // store for optional Game Room nudge (if you want to use it later)
+      try { localStorage.setItem('bingo_notify_optin', pl.notify ? 'yes' : 'no'); } catch(e){}
+
+      postToGoogle(pl).finally(()=>{
+        if (pl.notify) msgEl.textContent = 'We’ll remind you before future games. ✓';
+        celebrateConfetti(1);
+        setTimeout(()=>{ window.location.href = GAME_ROOM_URL; }, 900);
+      });
+    });
+
+    // init
+    syncAll();
+  })();
+</script>
+</body>
+</html>
+
