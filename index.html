@@ -165,18 +165,34 @@
   }
 
   /* Remember-me micro styles */
-  #billiobingo .remember-row{display:flex;gap:10px;align-items:center;margin:8px 0}
+  #billiobingo .remember-row{
+    display:flex;gap:8px;align-items:center;margin:6px 0 4px; /* CHANGED: tighter spacing */
+  }
   #billiobingo .forget-link{font-size:12px;color:#cbd5e1;text-decoration:underline;cursor:pointer}
 
   /* Sections */
   #billiobingo .section{margin-top:18px}
   .holiday-footer{
-    margin-top:14px; display:flex; align-items:center; gap:10px; color:#e2e8f0; font-size:12px
+    margin-top:10px; /* CHANGED: a little closer */
+    display:flex; align-items:center; gap:10px; color:#e2e8f0; font-size:12px
   }
-  .badge{
-    display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px;
-    background:linear-gradient(180deg,#fde68a,#f59e0b); color:#2b1600; font-weight:800; border:1px solid #d97706
+
+  /* ADDED: footer/notify area tightened and inline */
+  #billiobingo .footer{
+    display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap; /* CHANGED: tighter */
   }
+  .notify-wrap{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    padding:6px 10px;border-radius:10px;
+  }
+  .notify-wrap input[type="checkbox"]{width:16px;height:16px}
+  .btn-secondary{
+    background:linear-gradient(180deg,#e2e8f0,#cbd5e1); color:#0b1220;border:1px solid #64748b;border-radius:10px;
+    padding:10px 16px;font-weight:800;
+  }
+  .btn-secondary:hover{filter:brightness(1.04)}
 </style>
 </head>
 <body>
@@ -263,7 +279,7 @@
           <span id="forget_link" class="forget-link" role="button" tabindex="0">Nah, forget me here</span>
         </div>
 
-        <div style="display:flex;gap:10px;align-items:center;margin:10px 0">
+        <div style="display:flex;gap:10px;align-items:center;margin:8px 0"> <!-- CHANGED: tighter -->
           <input id="f_locked" type="checkbox">
           <label for="f_locked" style="margin:0">Lock card</label>
         </div>
@@ -298,8 +314,18 @@
           <tbody id="previewBottom"></tbody>
         </table>
 
-        <div class="footer" style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+        <div class="footer">
+          <!-- ADDED: inline notify checkbox near the submit button -->
+          <label class="notify-wrap" for="f_notify">
+            <input type="checkbox" id="f_notify" checked>
+            <span>Remember my card &amp; notify me before the next game</span>
+          </label>
+
           <button class="btn" type="submit">Send &amp; Continue ➜</button>
+
+          <!-- ADDED: standalone save + notify button -->
+          <button id="saveNotifyBtn" class="btn-secondary" type="button">Save my card &amp; notify me</button>
+
           <span id="msg" class="muted"></span>
         </div>
 
@@ -362,6 +388,10 @@
     const fRemember = document.getElementById('f_remember');
     const forgetLink = document.getElementById('forget_link');
     const REM_KEY = 'bingo_player_v1';
+
+    // ADDED: notify checkbox & quick-save button refs
+    const fNotify = document.getElementById('f_notify');           /* ADDED */
+    const saveNotifyBtn = document.getElementById('saveNotifyBtn'); /* ADDED */
 
     const state = { picks:new Set(), grid:[] };
 
@@ -431,13 +461,14 @@
         user: {
           name:   fName.value.trim(),
           email:  fEmail.value.trim(),
-          tiktok: normalizeHandle(fTikTok.value.trim()) // ✅ normalized
+          tiktok: normalizeHandle(fTikTok.value.trim())
         },
         locked:    fLocked.checked,
         game_lock: fGameLock.value.trim(),
         timestamp: Date.now(),
         submitted_at: new Date().toISOString(),
-        ua: navigator.userAgent
+        ua: navigator.userAgent,
+        notify: !!(fNotify && fNotify.checked)   /* ADDED */
       };
     }
 
@@ -482,6 +513,8 @@
         timestamp: String(pl.timestamp),
         submitted_at: pl.submitted_at,
         ua: pl.ua,
+        notify: pl.notify ? 'true' : 'false',           /* ADDED */
+        action: pl.action || 'submit',                  /* ADDED */
 
         // email-friendly rows/cols
         row_1: rows[0], row_2: rows[1], row_3: rows[2], row_4: rows[3], row_5: rows[4],
@@ -585,6 +618,7 @@
       fTikTok.addEventListener(evt,()=>{ fTikTok.value = normalizeHandle(fTikTok.value); pushIntoForm(); });
       fLocked.addEventListener(evt,pushIntoForm);
       fGameLock.addEventListener(evt,pushIntoForm);
+      if (fNotify) fNotify.addEventListener(evt,pushIntoForm); /* ADDED */
     });
 
     // ✅ Remember-me logic
@@ -619,6 +653,27 @@
       forgetLink.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); clearSaved(); }});
     }
 
+    // ADDED: quick "Save my card & notify me" without submitting
+    if (saveNotifyBtn){
+      saveNotifyBtn.addEventListener('click', async () => {
+        if (!fName.value.trim() || !fEmail.value.trim()){
+          alertEl.textContent = 'Name and email are required to save & notify.';
+          return;
+        }
+        if (state.picks.size !== 25) {
+          alertEl.textContent = 'Please select exactly 25 numbers before saving.';
+          return;
+        }
+        pushIntoForm();
+        const pl = payload();
+        pl.action = 'notify_only'; /* mark for your Apps Script */
+        msgEl.textContent = 'Saving your card & setting notifications…';
+        await postToGoogle(pl);
+        celebrateConfetti(1);
+        msgEl.textContent = 'Saved. We’ll ping you before the next game. ✓';
+      });
+    }
+
     // Guard + Submit -> Google Sheets -> Redirect (+ confetti)
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
@@ -636,6 +691,7 @@
       pushIntoForm();
 
       const pl = payload();
+      pl.action = 'submit'; /* ADDED */
       msgEl.textContent = 'Sending…';
 
       postToGoogle(pl).finally(()=>{
