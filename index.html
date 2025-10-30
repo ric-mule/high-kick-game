@@ -165,34 +165,24 @@
   }
 
   /* Remember-me micro styles */
-  #billiobingo .remember-row{
-    display:flex;gap:8px;align-items:center;margin:6px 0 4px; /* CHANGED: tighter spacing */
-  }
+  #billiobingo .remember-row{display:flex;gap:8px;align-items:center;margin:6px 0 4px}
   #billiobingo .forget-link{font-size:12px;color:#cbd5e1;text-decoration:underline;cursor:pointer}
 
   /* Sections */
   #billiobingo .section{margin-top:18px}
   .holiday-footer{
-    margin-top:10px; /* CHANGED: a little closer */
+    margin-top:10px;
     display:flex; align-items:center; gap:10px; color:#e2e8f0; font-size:12px
   }
 
-  /* ADDED: footer/notify area tightened and inline */
+  /* Footer spacing tightened */
   #billiobingo .footer{
-    display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap; /* CHANGED: tighter */
+    display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;
   }
-  .notify-wrap{
-    display:inline-flex;align-items:center;gap:8px;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.12);
-    padding:6px 10px;border-radius:10px;
-  }
-  .notify-wrap input[type="checkbox"]{width:16px;height:16px}
-  .btn-secondary{
-    background:linear-gradient(180deg,#e2e8f0,#cbd5e1); color:#0b1220;border:1px solid #64748b;border-radius:10px;
-    padding:10px 16px;font-weight:800;
-  }
-  .btn-secondary:hover{filter:brightness(1.04)}
+
+  /* Opt-in checkbox styling */
+  #billiobingo .optin input[type="checkbox"]{ width:16px;height:16px;margin-top:2px }
+  #billiobingo .optin span{ font-size:12px;color:#cbd5e1;line-height:1.25 }
 </style>
 </head>
 <body>
@@ -201,7 +191,7 @@
 
 <div id="billiobingo">
   <div class="frost">
-    <!-- Garland / Lights (inline SVG so you don’t need extra files) -->
+    <!-- Garland / Lights -->
     <div class="garland" aria-hidden="true">
       <svg class="lights" viewBox="0 0 600 60" preserveAspectRatio="none">
         <defs>
@@ -209,9 +199,7 @@
           <linearGradient id="glowG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#86efac"/><stop offset="1" stop-color="#16a34a"/></linearGradient>
           <linearGradient id="glowY" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/></linearGradient>
         </defs>
-        <!-- wire -->
         <path d="M0,20 C100,60 200,-10 300,20 400,50 500,-10 600,20" fill="none" stroke="#134e4a" stroke-width="4"/>
-        <!-- bulbs -->
         <g>
           <ellipse cx="60" cy="30" rx="8" ry="12" fill="url(#glowR)"/>
           <ellipse cx="140" cy="18" rx="8" ry="12" fill="url(#glowG)"/>
@@ -269,6 +257,12 @@
         <label for="f_email">Email</label>
         <input id="f_email" name="email" type="email" placeholder="you@example.com" required autocomplete="email">
 
+        <!-- Single, clear opt-in (future reminders only) -->
+        <label class="optin" for="f_notify" style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 4px;">
+          <input type="checkbox" id="f_notify" checked>
+          <span>Send me reminders before future games (8:15 &amp; 9:15 PM CT). This won’t affect this game.</span>
+        </label>
+
         <label for="f_tiktok">TikTok username</label>
         <input id="f_tiktok" name="tiktok" placeholder="@yourusername" autocomplete="username">
 
@@ -279,7 +273,7 @@
           <span id="forget_link" class="forget-link" role="button" tabindex="0">Nah, forget me here</span>
         </div>
 
-        <div style="display:flex;gap:10px;align-items:center;margin:8px 0"> <!-- CHANGED: tighter -->
+        <div style="display:flex;gap:10px;align-items:center;margin:8px 0">
           <input id="f_locked" type="checkbox">
           <label for="f_locked" style="margin:0">Lock card</label>
         </div>
@@ -315,17 +309,7 @@
         </table>
 
         <div class="footer">
-          <!-- ADDED: inline notify checkbox near the submit button -->
-          <label class="notify-wrap" for="f_notify">
-            <input type="checkbox" id="f_notify" checked>
-            <span>Remember my card &amp; notify me before the next game</span>
-          </label>
-
           <button class="btn" type="submit">Send &amp; Continue ➜</button>
-
-          <!-- ADDED: standalone save + notify button -->
-          <button id="saveNotifyBtn" class="btn-secondary" type="button">Save my card &amp; notify me</button>
-
           <span id="msg" class="muted"></span>
         </div>
 
@@ -389,9 +373,8 @@
     const forgetLink = document.getElementById('forget_link');
     const REM_KEY = 'bingo_player_v1';
 
-    // ADDED: notify checkbox & quick-save button refs
-    const fNotify = document.getElementById('f_notify');           /* ADDED */
-    const saveNotifyBtn = document.getElementById('saveNotifyBtn'); /* ADDED */
+    // NEW: single opt-in checkbox
+    const fNotify = document.getElementById('f_notify');
 
     const state = { picks:new Set(), grid:[] };
 
@@ -468,7 +451,7 @@
         timestamp: Date.now(),
         submitted_at: new Date().toISOString(),
         ua: navigator.userAgent,
-        notify: !!(fNotify && fNotify.checked)   /* ADDED */
+        notify: !!(fNotify && fNotify.checked)  // future reminders only
       };
     }
 
@@ -494,16 +477,13 @@
       pushIntoForm();
     }
 
-    // 🔧 Build flat key/value payload for Apps Script columns
+    // Build flat key/value payload for Apps Script columns
     function buildFlatPayload(pl){
       const { rows, cols } = rowsAndCols(pl.grid);
       return {
-        // user fields — top-level for e.parameter.*
         name:   pl.user.name,
         email:  pl.user.email,
         tiktok: pl.user.tiktok,
-
-        // useful extras
         selected_numbers: pl.selected.join(', '),
         grid_json: JSON.stringify(pl),
         locked: pl.locked ? 'true' : 'false',
@@ -513,16 +493,13 @@
         timestamp: String(pl.timestamp),
         submitted_at: pl.submitted_at,
         ua: pl.ua,
-        notify: pl.notify ? 'true' : 'false',           /* ADDED */
-        action: pl.action || 'submit',                  /* ADDED */
-
-        // email-friendly rows/cols
+        notify: pl.notify ? 'true' : 'false',
         row_1: rows[0], row_2: rows[1], row_3: rows[2], row_4: rows[3], row_5: rows[4],
         col_B: cols[0], col_I: cols[1], col_N: cols[2], col_G: cols[3], col_O: cols[4],
       };
     }
 
-    // 🎉 Confetti pop — lightweight DOM version
+    // Confetti
     function celebrateConfetti(bursts = 1){
       const layer = document.getElementById('confetti-layer') || (() => {
         const d = document.createElement('div'); d.id = 'confetti-layer'; document.body.appendChild(d); return d;
@@ -532,7 +509,7 @@
       const W = window.innerWidth;
 
       for (let b=0; b<bursts; b++){
-        const count = 120; // pieces per burst
+        const count = 120;
         for (let i=0; i<count; i++){
           const el = document.createElement('div');
           el.className = 'confetti';
@@ -544,13 +521,13 @@
             : colors[(i + Math.floor(Math.random()*colors.length))%colors.length];
 
           const startX = (Math.random()*W) + 'px';
-          const drift  = (Math.random()*160 - 80) + 'px';   // left/right sway
-          const dur    = (700 + Math.random()*900) + 'ms';  // 0.7–1.6s
+          const drift  = (Math.random()*160 - 80) + 'px';
+          const dur    = (700 + Math.random()*900) + 'ms';
 
           el.style.setProperty('--x', startX);
           el.style.setProperty('--dx', drift);
           el.style.setProperty('--dur', dur);
-          el.style.left = 0; // we use transform for x
+          el.style.left = 0;
 
           el.style.transform = `translate3d(${startX},-10%,0) rotate(${Math.random()*360}deg)`;
           el.addEventListener('animationend', () => el.remove());
@@ -559,11 +536,10 @@
       }
     }
 
-    // ---- Google Sheets POST (sends flat fields + JSON) ----
+    // Google Sheets POST
     function postToGoogle(pl){
       const flat = buildFlatPayload(pl);
 
-      // 1) Try sendBeacon with urlencoded (no preflight)
       try{
         if (navigator.sendBeacon) {
           const body = new URLSearchParams(flat);
@@ -575,7 +551,6 @@
         }
       }catch(_){}
 
-      // 2) Fallback: FormData + no-cors
       try{
         const fd = new FormData();
         for (const [k,v] of Object.entries(flat)) fd.append(k, v);
@@ -618,10 +593,10 @@
       fTikTok.addEventListener(evt,()=>{ fTikTok.value = normalizeHandle(fTikTok.value); pushIntoForm(); });
       fLocked.addEventListener(evt,pushIntoForm);
       fGameLock.addEventListener(evt,pushIntoForm);
-      if (fNotify) fNotify.addEventListener(evt,pushIntoForm); /* ADDED */
+      if (fNotify) fNotify.addEventListener(evt,pushIntoForm);
     });
 
-    // ✅ Remember-me logic
+    // Remember-me logic
     function saveRemembered(){
       if (!fRemember || !fRemember.checked) return;
       const data = {
@@ -653,28 +628,7 @@
       forgetLink.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); clearSaved(); }});
     }
 
-    // ADDED: quick "Save my card & notify me" without submitting
-    if (saveNotifyBtn){
-      saveNotifyBtn.addEventListener('click', async () => {
-        if (!fName.value.trim() || !fEmail.value.trim()){
-          alertEl.textContent = 'Name and email are required to save & notify.';
-          return;
-        }
-        if (state.picks.size !== 25) {
-          alertEl.textContent = 'Please select exactly 25 numbers before saving.';
-          return;
-        }
-        pushIntoForm();
-        const pl = payload();
-        pl.action = 'notify_only'; /* mark for your Apps Script */
-        msgEl.textContent = 'Saving your card & setting notifications…';
-        await postToGoogle(pl);
-        celebrateConfetti(1);
-        msgEl.textContent = 'Saved. We’ll ping you before the next game. ✓';
-      });
-    }
-
-    // Guard + Submit -> Google Sheets -> Redirect (+ confetti)
+    // Submit -> Google Sheets -> Redirect
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
 
@@ -691,11 +645,13 @@
       pushIntoForm();
 
       const pl = payload();
-      pl.action = 'submit'; /* ADDED */
       msgEl.textContent = 'Sending…';
 
+      // store for optional Game Room nudge (if you want to use it later)
+      try { localStorage.setItem('bingo_notify_optin', pl.notify ? 'yes' : 'no'); } catch(e){}
+
       postToGoogle(pl).finally(()=>{
-        // Confetti first, then scoot to the Game Room
+        if (pl.notify) msgEl.textContent = 'We’ll remind you before future games. ✓';
         celebrateConfetti(1);
         setTimeout(()=>{ window.location.href = GAME_ROOM_URL; }, 900);
       });
