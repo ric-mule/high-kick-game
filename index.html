@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -264,6 +263,14 @@
           <span>Send me reminders before future games.</span>
         </label>
 
+        <!-- ADDED: pick a game slot (used to compute ISO time) -->
+        <label for="f_game_time">Which game?</label>
+        <select id="f_game_time" name="game_time">
+          <option value="">Decide later</option>
+          <option value="20:00">First game (8:00 PM)</option>
+          <option value="21:15">Second game (9:15 PM)</option>
+        </select>
+
         <label for="f_tiktok">TikTok username</label>
         <input id="f_tiktok" name="tiktok" placeholder="@yourusername" autocomplete="username">
 
@@ -286,6 +293,11 @@
         <input type="hidden" id="f_selected_hidden" name="selected_numbers">
         <input type="hidden" id="f_json_hidden" name="grid_json">
         <input type="hidden" id="f_locked_hidden" name="locked" value="false">
+
+        <!-- ADDED: hidden fields for server integration -->
+        <input type="hidden" id="f_card_id" name="card_id">           <!-- ADDED -->
+        <input type="hidden" id="f_notify_h" name="notify">           <!-- ADDED -->
+        <input type="hidden" id="f_game_time_h" name="game_time_iso"> <!-- ADDED -->
 
         <!-- Email-friendly rows -->
         <input type="hidden" id="f_row1" name="row_1">
@@ -311,6 +323,10 @@
 
         <div class="footer">
           <button class="btn" type="submit">Send &amp; Continue ➜</button>
+          <!-- ADDED: utility buttons -->
+          <button id="saveBtn" class="btn" type="button">💾 Save for Later</button>
+          <button id="loadBtn" class="btn" type="button">📥 Load Saved</button>
+          <button id="linkBtn" class="btn" type="button">🔗 Copy Magic Link</button>
           <span id="msg" class="muted"></span>
         </div>
 
@@ -341,6 +357,21 @@
       return s.startsWith('@') ? s : '@' + s.replace(/^@+/, '');
     }
 
+    // Build ISO for *today* at chosen HH:MM (local tz)
+    function toISOForTodayLocal(hhmm){
+      if (!hhmm) return '';
+      const [hh,mm] = hhmm.split(':').map(Number);
+      const now = new Date();
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0);
+      const pad = n=>String(n).padStart(2,'0');
+      const tzOffMin = -d.getTimezoneOffset();
+      const sign = tzOffMin>=0?'+':'-';
+      const tzH = pad(Math.floor(Math.abs(tzOffMin)/60));
+      const tzM = pad(Math.abs(tzOffMin)%60);
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(hh)}:${pad(mm)}:00${sign}${tzH}:${tzM}`;
+    }
+
+    // Refs
     const padEl = document.getElementById('pad');
     const previewTop = document.getElementById('previewTop');
     const previewBottom = document.getElementById('previewBottom');
@@ -374,8 +405,17 @@
     const forgetLink = document.getElementById('forget_link');
     const REM_KEY = 'bingo_player_v1';
 
-    // NEW: single opt-in checkbox
+    // NEW: opt-in, game time, and hidden mirrors
     const fNotify = document.getElementById('f_notify');
+    const fGameTime = document.getElementById('f_game_time');
+    const fNotifyH = document.getElementById('f_notify_h');           // hidden
+    const fGameTimeH = document.getElementById('f_game_time_h');       // hidden ISO
+    const fCardId = document.getElementById('f_card_id');              // hidden card_id
+
+    // Buttons for local save/load/magic
+    const saveBtn = document.getElementById('saveBtn');
+    const loadBtn = document.getElementById('loadBtn');
+    const linkBtn = document.getElementById('linkBtn');
 
     const state = { picks:new Set(), grid:[] };
 
@@ -436,7 +476,18 @@
       return { rows, cols };
     }
 
+    // --- CARD ID (unique per card) ---
+    function newCardId(){ return (crypto.randomUUID ? crypto.randomUUID() : ('cid_' + Date.now() + '_' + Math.random().toString(16).slice(2))); }
+    if (!fCardId.value) fCardId.value = newCardId(); // initialize once
+
+    // Mirror meta fields to hiddens
+    function syncMetaFields(){
+      if (fNotifyH) fNotifyH.value = (fNotify && fNotify.checked) ? 'true' : 'false';
+      if (fGameTimeH) fGameTimeH.value = toISOForTodayLocal(fGameTime?.value || '');
+    }
+
     function payload(){
+      syncMetaFields();
       return {
         page:'builder',
         type:'number-bingo-1-100',
@@ -449,16 +500,27 @@
         },
         locked:    fLocked.checked,
         game_lock: fGameLock.value.trim(),
+
+        // NEW
+        card_id:   fCardId.value,
+        notify:    (fNotify && fNotify.checked) ? true : false,
+        game_time: fGameTimeH.value, // full ISO for today (or '')
+
         timestamp: Date.now(),
         submitted_at: new Date().toISOString(),
-        ua: navigator.userAgent,
-        notify: !!(fNotify && fNotify.checked)  // future reminders only
+        ua: navigator.userAgent
       };
     }
 
     function pushIntoForm(){
       const pl = payload();
 
+      // Visible -> hidden mirrors
+      if (fCardId)     fCardId.value     = pl.card_id;
+      if (fNotifyH)    fNotifyH.value    = pl.notify ? 'true' : 'false';
+      if (fGameTimeH)  fGameTimeH.value  = pl.game_time || '';
+
+      // Packed values for your sheet
       fSelectedHidden.value = pl.selected.join(', ');
       fJsonHidden.value     = JSON.stringify(pl, null, 2);
       fLockedHidden.value   = pl.locked ? 'true' : 'false';
@@ -482,9 +544,17 @@
     function buildFlatPayload(pl){
       const { rows, cols } = rowsAndCols(pl.grid);
       return {
+        // user
         name:   pl.user.name,
         email:  pl.user.email,
         tiktok: pl.user.tiktok,
+
+        // NEW top-levels
+        card_id: pl.card_id,
+        notify:  pl.notify ? 'true' : 'false',
+        game_time_iso: pl.game_time,
+
+        // useful extras
         selected_numbers: pl.selected.join(', '),
         grid_json: JSON.stringify(pl),
         locked: pl.locked ? 'true' : 'false',
@@ -494,7 +564,8 @@
         timestamp: String(pl.timestamp),
         submitted_at: pl.submitted_at,
         ua: pl.ua,
-        notify: pl.notify ? 'true' : 'false',
+
+        // email-friendly rows/cols
         row_1: rows[0], row_2: rows[1], row_3: rows[2], row_4: rows[3], row_5: rows[4],
         col_B: cols[0], col_I: cols[1], col_N: cols[2], col_G: cols[3], col_O: cols[4],
       };
@@ -594,7 +665,8 @@
       fTikTok.addEventListener(evt,()=>{ fTikTok.value = normalizeHandle(fTikTok.value); pushIntoForm(); });
       fLocked.addEventListener(evt,pushIntoForm);
       fGameLock.addEventListener(evt,pushIntoForm);
-      if (fNotify) fNotify.addEventListener(evt,pushIntoForm);
+      if (fNotify) fNotify.addEventListener(evt,()=>{ syncMetaFields(); pushIntoForm(); });
+      if (fGameTime) fGameTime.addEventListener(evt,()=>{ syncMetaFields(); pushIntoForm(); });
     });
 
     // Remember-me logic
@@ -629,6 +701,102 @@
       forgetLink.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); clearSaved(); }});
     }
 
+    // --- Local Save/Load (same-device) ---
+    const SAVE_KEY = 'bingo_card_saved_v2';
+    function saveCurrentCardLocal(){
+      if (state.picks.size !== 25) { alert('Pick exactly 25 numbers first, sugar.'); return; }
+      const pl = payload();
+      const pack = {
+        picks: pl.selected,
+        user: pl.user,
+        locked: pl.locked,
+        game_lock: pl.game_lock,
+        card_id: pl.card_id,
+        game_time: pl.game_time,
+        saved_at: Date.now()
+      };
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(pack)); alert('Card saved on this device. Hit “Load Saved” later.'); }
+      catch(e){ alert('Couldn’t save on this device.'); }
+    }
+
+    function loadSavedCardLocal(){
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return alert('No saved card on this device yet.');
+        const pack = JSON.parse(raw);
+        // restore picks
+        state.picks.clear();
+        padEl.querySelectorAll('.num.sel').forEach(el=>el.classList.remove('sel'));
+        (pack.picks||[]).forEach(n=>{
+          state.picks.add(Number(n));
+          const cell=padEl.querySelector(`.num[data-n="${n}"]`);
+          if (cell) cell.classList.add('sel');
+        });
+        // restore user + flags
+        fName.value   = pack.user?.name   || '';
+        fEmail.value  = pack.user?.email  || '';
+        fTikTok.value = pack.user?.tiktok || '';
+        fLocked.checked = !!pack.locked;
+        fGameLock.value = pack.game_lock || '';
+        if (pack.card_id) fCardId.value = pack.card_id;
+        if (pack.game_time) { fGameTimeH.value = pack.game_time; }
+        syncAll();
+        alert('Loaded your saved card. Ready to roll.');
+      } catch(e){ alert('Couldn’t load the saved card.'); }
+    }
+
+    saveBtn?.addEventListener('click', saveCurrentCardLocal);
+    loadBtn?.addEventListener('click', loadSavedCardLocal);
+
+    // --- Magic Link (works across devices; stores data in URL hash) ---
+    function buildMagicLink(){
+      if (state.picks.size !== 25) { alert('Pick exactly 25 numbers first.'); return null; }
+      const pl = payload();
+      const minimal = { p: pl.selected, u: pl.user, l: pl.locked, g: pl.game_lock, id: pl.card_id };
+      const hash = btoa(encodeURIComponent(JSON.stringify(minimal)));
+      return `${location.origin}${location.pathname}#card=${hash}`;
+    }
+    function applyFromHash(){
+      const m = location.hash.match(/#card=([^&]+)/);
+      if (!m) return;
+      try{
+        const decoded = JSON.parse(decodeURIComponent(atob(m[1])));
+        // restore picks + user
+        state.picks.clear();
+        padEl.querySelectorAll('.num.sel').forEach(el=>el.classList.remove('sel'));
+        (decoded.p||[]).forEach(n=>{
+          state.picks.add(Number(n));
+          const cell=padEl.querySelector(`.num[data-n="${n}"]`);
+          if (cell) cell.classList.add('sel');
+        });
+        fName.value   = decoded.u?.name   || '';
+        fEmail.value  = decoded.u?.email  || '';
+        fTikTok.value = decoded.u?.tiktok || '';
+        fLocked.checked = !!decoded.l;
+        fGameLock.value = decoded.g || '';
+        if (decoded.id) fCardId.value = decoded.id;
+        syncAll();
+        history.replaceState(null,'',location.pathname + location.search);
+        alert('Loaded your card from magic link.');
+      }catch(_){}
+    }
+    linkBtn?.addEventListener('click', ()=>{
+      const link = buildMagicLink(); if (!link) return;
+      (navigator.clipboard?.writeText(link) || Promise.reject()).then(
+        ()=>alert('Magic link copied. Bookmark or DM it to yourself.'),
+        ()=>prompt('Copy your magic link:', link)
+      );
+    });
+    applyFromHash();
+
+    // Optional: prompt to load if we detect a local save
+    (function promptLoad(){
+      if (!localStorage.getItem(SAVE_KEY)) return;
+      setTimeout(()=>{
+        if (confirm('We found a saved card on this device. Load it now?')) loadSavedCardLocal();
+      }, 400);
+    })();
+
     // Submit -> Google Sheets -> Redirect
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
@@ -648,13 +816,13 @@
       const pl = payload();
       msgEl.textContent = 'Sending…';
 
-      // store for optional Game Room nudge (if you want to use it later)
+      // store opt-in clue locally (optional)
       try { localStorage.setItem('bingo_notify_optin', pl.notify ? 'yes' : 'no'); } catch(e){}
 
       postToGoogle(pl).finally(()=>{
         if (pl.notify) msgEl.textContent = 'We’ll remind you before future games. ✓';
         celebrateConfetti(1);
-        setTimeout(()=>{ window.location.href = GAME_ROOM_URL; }, 900);
+        setTimeout(()=>{ window.location.href = GAME_ROOM_URL + '?card=' + encodeURIComponent(pl.card_id); }, 900);
       });
     });
 
@@ -664,4 +832,3 @@
 </script>
 </body>
 </html>
-
