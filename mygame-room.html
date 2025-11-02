@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fat Mule — Game Room • Holiday Edition</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <style>
+    /* ================================
+       HOLIDAY LOOK — dark pine + snow
+       ================================ */
+    :root{
+      --bg1:#061a1a; --bg2:#0b2a2a; --frost:rgba(6,18,20,.72);
+      --line:rgba(255,255,255,.12); --ink:#e6f6ff; --muted:#a7bdc9;
+      --gold:#fbbf24; --cran:#e11d48; --pine:#16a34a; --sky:#22d3ee;
+      --chip:rgba(255,255,255,.12); --head:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+    html,body{margin:0; min-height:100%; color:var(--ink);
+      background:
+        radial-gradient(1200px 800px at -10% -20%, #103, transparent 60%),
+        radial-gradient(1000px 700px at 110% -30%, #013, transparent 60%),
+        linear-gradient(180deg,var(--bg1),var(--bg2));}
+
+    /* Snow */
+    .snow{position:fixed;inset:0;pointer-events:none;opacity:.4;z-index:0;
+      background-image:
+        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,.7) 50%, transparent 51%),
+        radial-gradient(2px 2px at 80px 120px, rgba(255,255,255,.7) 50%, transparent 51%),
+        radial-gradient(2px 2px at 200px 80px, rgba(255,255,255,.7) 50%, transparent 51%),
+        radial-gradient(2px 2px at 320px 200px, rgba(255,255,255,.7) 50%, transparent 51%),
+        radial-gradient(2px 2px at 480px 100px, rgba(255,255,255,.7) 50%, transparent 51%);
+      background-size:600px 600px,700px 700px,800px 800px,900px 900px,1000px 1000px;
+      animation:snow 18s linear infinite;}
+    @keyframes snow{
+      0%{background-position:0 0,0 0,0 0,0 0,0 0}
+      100%{background-position:0 600px,0 700px,0 800px,0 900px,0 1000px}
+    }
+
+    .wrap{position:relative; z-index:1; max-width:1200px;margin:0 auto;padding:16px}
+    h1{margin:0 0 6px;font-size:24px;display:flex;align-items:center;gap:8px}
+    .muted{color:var(--muted);font-size:12px}
+
+    /* Frosted panels */
+    .panel{background:var(--frost);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05)}
+    .panel header{padding:10px 12px;border-bottom:1px solid var(--line);background:var(--head);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+    .panel .body{padding:12px}
+
+    /* Layout: side-by-side wide, stacked on small */
+    .layout{ display:grid; gap:18px; align-items:start; grid-template-columns:minmax(0,1.1fr) minmax(0,0.9fr);}
+    @media (max-width:980px){ .layout{ grid-template-columns:1fr; } }
+
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{background:var(--chip);padding:6px 9px;border-radius:999px;font-size:13px;border:1px solid var(--line);color:var(--ink);font-weight:800}
+
+    /* Buttons / Tabs */
+    .btn{background:linear-gradient(180deg,#0f172a,#0b1220);color:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+    .btn:hover{filter:brightness(1.08)}
+    .btn.ok{background:linear-gradient(180deg, #22c55e, #15803d); border-color:#1e7a3a}
+    .btn.link{background:transparent;color:var(--sky);border:1px solid var(--sky)}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+
+    .tabs{display:flex;gap:8px;margin:10px 0 14px;flex-wrap:wrap}
+    .tab{padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:#0d1b2a;color:#dbeafe;font-weight:900;cursor:pointer}
+    .tab.active{outline:3px solid rgba(34,211,238,.25); background:#0e2238}
+
+    /* Grid/Card */
+    .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:540px;overflow:hidden;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+    .grid th{background:linear-gradient(180deg,#134e4a,#0b2a2a);padding:12px;color:#eafff8;font-weight:800;letter-spacing:.6px}
+    .grid td{background:rgba(255,255,255,.06);color:#e6f6ff;font-weight:900;padding:16px;font-size:20px;line-height:1;border:1px solid rgba(255,255,255,.08);text-align:center;user-select:none}
+    .cell{cursor:pointer}
+    .cell.mark{background:linear-gradient(180deg,#16a34a,#0e7a3a);color:#fff;border-color:#0e7a3a;box-shadow:0 0 0 2px rgba(22,163,74,.25) inset}
+
+    /* Notices */
+    #noCardMsg{color:#fecaca;margin-top:10px}
+    .toast{display:none;margin:10px 0;padding:10px 12px;border-radius:10px;background:rgba(34,197,94,.15);border:1px solid #22c55e;color:#a7f3d0;font-size:14px}
+    #serverStatus{display:none;margin:10px 0;padding:10px 12px;border-radius:10px;background:rgba(59,130,246,.15);border:1px solid #60a5fa;color:#bfdbfe;font-size:13px}
+
+    /* Hide/show sections for toggle on small screens */
+    .hide{display:none}
+  </style>
+</head>
+<body>
+  <div class="snow" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <h1>Fat Mule Bingo — Game Room <span style="font-size:18px;background:linear-gradient(180deg,#14532d,#052e2b);padding:4px 10px;border-radius:999px;border:1px solid var(--line)">🎄 Holiday Edition</span></h1>
+    <p class="muted">Tap a tab to switch. Flip your device sideways for a comfy split view.</p>
+
+    <!-- Top tabs for mobile/small screens -->
+    <div class="tabs">
+      <button id="tabLive" class="tab active">📺 Watch Live</button>
+      <button id="tabCard" class="tab">🎲 Your Card</button>
+      <a id="openLiveBtn" class="btn link" style="margin-left:auto" target="_blank" rel="noopener noreferrer">Open TikTok App</a>
+    </div>
+
+    <div id="serverStatus">✅ Claim sent. Check the Sheet.</div>
+    <div id="toast" class="toast" role="status" aria-live="polite">
+      Bingo claim sent. We’ll check it and holler back… taking you to the live.
+    </div>
+
+    <div class="layout">
+      <!-- LEFT: TikTok embed -->
+      <section id="livePanel" class="panel">
+        <header><strong>TikTok Live</strong></header>
+        <div class="body">
+          <!-- Creator embed (will show profile / live presence) -->
+          <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@ricpatton" data-unique-id="ricpatton" data-embed-type="creator" style="max-width:780px;min-width:288px;">
+            <section>
+              <a target="_blank" href="https://www.tiktok.com/@ricpatton?refer=creator_embed" rel="noopener noreferrer">@ricpatton</a>
+            </section>
+          </blockquote>
+          <script async src="https://www.tiktok.com/embed.js"></script>
+
+          <div class="row" style="margin-top:10px">
+            <span class="muted">Wanna chat or gift? Join the live on TikTok:</span>
+            <a id="joinLiveLink" class="btn link" target="_blank" rel="noopener noreferrer">Open Live Chat</a>
+          </div>
+          <p class="muted" id="wire" style="margin-top:6px;"></p>
+        </div>
+      </section>
+
+      <!-- RIGHT: Player Card -->
+      <aside id="cardPanel" class="panel">
+        <header>
+          <strong>Your Card</strong>
+          <button id="winBtn" class="btn ok">I GOT BINGO!</button>
+        </header>
+        <div class="body">
+          <div id="meta" class="row" style="margin-bottom:8px">
+            <span class="pill" id="playerName"></span>
+            <span class="pill" id="emailInfo"></span>
+            <span class="pill" id="tiktokInfo"></span>
+            <span class="pill" id="lockInfo"></span>
+            <span class="pill" id="gameLockInfo"></span>
+            <span class="pill" id="timestampInfo"></span>
+          </div>
+
+          <table class="grid" aria-label="5 by 5 bingo card">
+            <thead>
+              <tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr>
+            </thead>
+            <tbody id="cardBody"></tbody>
+          </table>
+
+          <p id="noCardMsg" class="muted" style="display:none">
+            No saved bingo card found. Please build and submit your card first.
+            <a href="index.html" class="btn link" style="margin-left:8px;">Back to Builder</a>
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Hidden iframe absorbs the POST so the page doesn't navigate -->
+  <iframe name="silent_receiver" id="silent_receiver" style="display:none"></iframe>
+
+  <!-- Hidden claim form to Apps Script -->
+  <form id="bingoClaimForm"
+        action="https://script.google.com/macros/s/AKfycbxbWht_tS3LKLaN0W95jOgJpV09sovOsCX7WfdYUVvwwQBB7vIPTioJQWp6xIWaKE4Xuw/exec"
+        method="POST"
+        target="silent_receiver"
+        enctype="multipart/form-data"
+        style="display:none"
+        accept-charset="utf-8"
+        novalidate>
+    <!-- user -->
+    <input type="hidden" name="name"  id="p_name">
+    <input type="hidden" name="email" id="p_email">
+    <input type="hidden" name="tiktok" id="p_tiktok">
+    <!-- payload -->
+    <input type="hidden" name="selected_numbers" id="p_selected">
+    <input type="hidden" name="grid_json"         id="p_json">
+    <input type="hidden" name="locked"            id="p_locked">
+    <input type="hidden" name="game_lock"         id="p_game_lock">
+    <!-- meta -->
+    <input type="hidden" name="page"         id="p_page" value="game">
+    <input type="hidden" name="type"         id="p_type" value="bingo-claim">
+    <input type="hidden" name="timestamp"    id="p_ts">
+    <input type="hidden" name="submitted_at" id="p_submitted">
+    <input type="hidden" name="ua"           id="p_ua">
+    <!-- rows/cols -->
+    <input type="hidden" name="row_1" id="p_r1"><input type="hidden" name="row_2" id="p_r2">
+    <input type="hidden" name="row_3" id="p_r3"><input type="hidden" name="row_4" id="p_r4">
+    <input type="hidden" name="row_5" id="p_r5">
+    <input type="hidden" name="col_B" id="p_cB"><input type="hidden" name="col_I" id="p_cI">
+    <input type="hidden" name="col_N" id="p_cN"><input type="hidden" name="col_G" id="p_cG">
+    <input type="hidden" name="col_O" id="p_cO">
+    <!-- extras -->
+    <input type="hidden" name="card_id"    id="p_card_id">
+    <input type="hidden" name="card_csv"   id="p_card_csv">
+    <input type="hidden" name="marks"      id="p_marks">
+    <input type="hidden" name="image_data" id="p_image">
+  </form>
+
+  <!-- Winner email relay (kept) -->
+  <form id="winnerForm" action="https://formsubmit.co/bingo@alabamabluesman.com" method="POST" style="display:none"></form>
+
+  <script>
+  (function(){
+    /* ====== CONFIG ====== */
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbWht_tS3LKLaN0W95jOgJpV09sovOsCX7WfdYUVvwwQBB7vIPTioJQWp6xIWaKE4Xuw/exec';
+    const STORAGE_KEY='bingo_card_last';
+    const TIKTOK_HANDLE='ricpatton';
+    const LIVE_URL='https://www.tiktok.com/@'+TIKTOK_HANDLE+'/live';
+
+    // Proof image
+    const ATTACH_IMAGE=true;
+    const IMG_SIZE=520, IMG_QUALITY=0.75;
+    const REDIRECT_TO_LIVE=true, REDIRECT_DELAY_MS=700;
+
+    /* ====== REFS ====== */
+    function byId(id){ return document.getElementById(id); }
+    const cardBody=byId('cardBody'), toast=byId('toast'), serverStatus=byId('serverStatus');
+    const livePanel=byId('livePanel'), cardPanel=byId('cardPanel');
+    const tabLive=byId('tabLive'), tabCard=byId('tabCard'), openLiveBtn=byId('openLiveBtn');
+
+    // small state
+    window.state = { payload:null, marks:new Set(), markKey:'' };
+
+    /* ====== UTILS ====== */
+    function gridHash(g){ try{ var s=JSON.stringify(g),h=0; for(var i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return 'marks_'+Math.abs(h);}catch(e){return'marks_default';} }
+    function cellKey(r,c){ return r+'-'+c; }
+    function cardIdFromGrid(g){ try{ var s=JSON.stringify(g),h=0; for(var i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return 'card_'+Math.abs(h);}catch(e){return'card_unknown';} }
+    function flattenGridToCsv(g){ var out=[]; for (var r=0;r<5;r++){ for (var c=0;c<5;c++){ var v=g[r][c]; out.push((v==null||v==='')?'':String(v)); } } return out.join(',');}
+
+    // Accept either ?card=<UUID> **or** (legacy) ?card=<base64 json> — we’ll try both
+    async function fetchCardById(id){
+      try{
+        const url = GOOGLE_SCRIPT_URL + '?card_id=' + encodeURIComponent(id);
+        const res = await fetch(url, {mode:'cors'});
+        if (!res.ok) return null;
+        const data = await res.json();
+        return (data && data.grid) ? data : null;
+      }catch(_){ return null; }
+    }
+    function parseLegacyCardParam(){ try{
+      const url = new URL(location.href);
+      const raw = url.searchParams.get('card'); if(!raw) return null;
+      // if it's a short ID, let fetch handle it
+      if (!raw.includes('%') && raw.length <= 64 && !raw.match(/[=]/)) return { id: raw, legacy:false };
+      // otherwise assume base64-encoded payload
+      const decoded = JSON.parse(decodeURIComponent(atob(raw)));
+      return { legacy:true, payload:decoded };
+    }catch(e){ return null; } }
+
+    function loadPayload(){
+      // 1) URL param route
+      const url = new URL(location.href);
+      const id = url.searchParams.get('card_id') || url.searchParams.get('id');
+      if (id) return { via:'id', id };
+
+      const legacy = parseLegacyCardParam();
+      if (legacy && legacy.legacy && legacy.payload) return { via:'payload', payload: legacy.payload };
+      if (legacy && legacy.id) return { via:'id', id: legacy.id };
+
+      // 2) Fallback: localStorage from builder
+      try{
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return { via:'local', payload: JSON.parse(saved) };
+      }catch(e){}
+      return null;
+    }
+
+    function renderMeta(pl){
+      var user=pl && pl.user?pl.user:{};
+      byId('playerName').textContent   = user.name ? ('Player: '+user.name) : '';
+      byId('emailInfo').textContent    = user.email ? user.email : '';
+      byId('tiktokInfo').textContent   = user.tiktok ? user.tiktok : '';
+      byId('lockInfo').textContent     = pl && pl.locked ? 'Locked' : 'Unlocked';
+      byId('gameLockInfo').textContent = pl && pl.game_lock ? ('Lock # '+pl.game_lock) : '';
+      byId('timestampInfo').textContent= pl && pl.timestamp ? new Date(pl.timestamp).toLocaleString() : '';
+    }
+    function renderCard(){
+      var g=state.payload.grid; cardBody.innerHTML='';
+      for (var r=0;r<5;r++){
+        var tr=document.createElement('tr');
+        for (var c=0;c<5;c++){
+          var td=document.createElement('td'); td.className='cell';
+          var val=g[r][c]; td.textContent=(val===''||val==null)?'':String(val);
+          td.dataset.r=r; td.dataset.c=c;
+          td.addEventListener('click',(function(rr,cc){ return function(){ toggleMark(rr,cc); };})(r,c));
+          tr.appendChild(td);
+        }
+        cardBody.appendChild(tr);
+      }
+      paintMarks();
+    }
+    function toggleMark(r,c){ var k=cellKey(r,c); if(state.marks.has(k)) state.marks.delete(k); else state.marks.add(k); paintMarks(); persistMarks(); }
+    function paintMarks(){ var cells=cardBody.querySelectorAll('.cell'); for (var i=0;i<cells.length;i++){ var td=cells[i]; var k=cellKey(+td.dataset.r,+td.dataset.c); if(state.marks.has(k)) td.classList.add('mark'); else td.classList.remove('mark'); } }
+    function persistMarks(){ try{ localStorage.setItem(state.markKey, JSON.stringify(Array.from(state.marks))); }catch(e){} }
+    function loadMarks(){ try{ var raw=localStorage.getItem(state.markKey); if(!raw) return; var arr=JSON.parse(raw)||[]; state.marks=new Set(arr);}catch(e){} }
+
+    function fitText(ctx,text,maxPx,basePx,minPx){ var size=basePx; ctx.font='bold '+size+'px Arial, Helvetica, sans-serif'; while(ctx.measureText(text).width>maxPx && size>minPx){ size-=1; ctx.font='bold '+size+'px Arial, Helvetica, sans-serif'; } return size; }
+    function drawCardToCanvas(grid, marks, handle){
+      var size=IMG_SIZE, pad=26, headH=82, w=size, h=size+headH, cell=(size - pad*2)/5;
+      var cvs=document.createElement('canvas'); cvs.width=w; cvs.height=h; var ctx=cvs.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+      ctx.fillStyle='#111'; ctx.font='bold 32px Arial, Helvetica, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      'BINGO'.split('').forEach(function(ch,i){ var x=pad+cell/2+i*cell, y=28; ctx.fillText(ch,x,y); });
+      if(handle){ ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillStyle='#0f172a'; var maxW=size - pad*2; var sizePx=fitText(ctx,handle,maxW,22,12); ctx.font='bold '+sizePx+'px Arial, Helvetica, sans-serif'; ctx.fillText(handle,w/2,56); }
+      for (var r=0;r<5;r++){ for (var c=0;c<5;c++){ var x=pad+c*cell, y=headH-6+r*cell, key=r+'-'+c;
+        if(marks.has(key)){ ctx.fillStyle='#16a34a'; ctx.fillRect(x,y,cell,cell);} else { ctx.fillStyle='#fff'; ctx.fillRect(x,y,cell,cell); }
+        ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.strokeRect(x,y,cell,cell);
+        var v=grid[r][c]; ctx.fillStyle=marks.has(key)?'#fff':'#111'; ctx.font='bold 26px Arial, Helvetica, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText((v==null||v==='')?'':String(v), x+cell/2, y+cell/2);
+      }}
+      return cvs;
+    }
+
+    function rowsAndCols(g){
+      const rows = g.map(r => r.map(x => x === '' ? '' : String(x)).join(' '));
+      const cols = [0,1,2,3,4].map(c => g.map(r => r[c]).map(x => x === '' ? '' : String(x)).join(' '));
+      return { rows, cols };
+    }
+
+    function fillAndSubmitForm(fields){
+      const form = document.getElementById('bingoClaimForm');
+      const pl   = state.payload || {};
+      const u    = (pl.user || {});
+      const { rows, cols } = rowsAndCols(pl.grid || []);
+      const selected = Array.isArray(pl.selected) ? pl.selected.slice().sort((a,b)=>a-b) : [];
+
+      // user
+      byId('p_name').value   = (u.name||'').trim() || (fields.playerName||'Guest');
+      byId('p_email').value  = (u.email||'').trim() || (fields.email||'');
+      byId('p_tiktok').value = (u.tiktok||'').trim() || (fields.tiktok||'');
+
+      // payload
+      byId('p_selected').value   = selected.join(', ');
+      byId('p_json').value       = JSON.stringify(pl);
+      byId('p_locked').value     = pl.locked ? 'true' : 'false';
+      byId('p_game_lock').value  = pl.game_lock || (fields.gameId||'');
+
+      // meta
+      byId('p_ts').value         = String(Date.now());
+      byId('p_submitted').value  = new Date().toISOString();
+      byId('p_ua').value         = navigator.userAgent;
+
+      // rows/cols
+      byId('p_r1').value = rows[0]||''; byId('p_r2').value = rows[1]||''; byId('p_r3').value = rows[2]||'';
+      byId('p_r4').value = rows[3]||''; byId('p_r5').value = rows[4]||'';
+      byId('p_cB').value = cols[0]||''; byId('p_cI').value = cols[1]||''; byId('p_cN').value = cols[2]||'';
+      byId('p_cG').value = cols[3]||''; byId('p_cO').value = cols[4]||'';
+
+      // extras
+      byId('p_card_id').value  = fields.cardId || cardIdFromGrid(pl.grid);
+      byId('p_card_csv').value = fields.cardNumbers || flattenGridToCsv(pl.grid);
+      byId('p_marks').value    = fields.marks || Array.from(state.marks).join('|');
+
+      // proof photo
+      if (ATTACH_IMAGE){
+        const handle=(u && u.tiktok) ? u.tiktok : '';
+        const canvas=drawCardToCanvas(pl.grid, state.marks, handle);
+        const dataUrl = canvas.toDataURL('image/jpeg', IMG_QUALITY);
+        byId('p_image').value = dataUrl;
+
+        const kb = Math.round((dataUrl.length * 3/4) / 1024);
+        serverStatus.textContent = `✅ Claim prepared — photo about ${kb} KB`;
+        serverStatus.style.display = 'block';
+      } else {
+        byId('p_image').value = '';
+      }
+
+      // show server reply when iframe loads
+      var sink=document.getElementById('silent_receiver');
+      var showReply=function(){ serverStatus.style.display='block'; sink.removeEventListener('load',showReply); };
+      sink.addEventListener('load',showReply);
+
+      form.submit();
+    }
+
+    async function sendClaim(btn){
+      var pl=state.payload;
+      if(!pl){ alert('No card loaded yet.'); return; }
+      if(state.marks.size===0 && !confirm('No marks on your card. Send claim anyway?')) return;
+
+      btn.disabled=true; var old=btn.textContent; btn.textContent='Sending…';
+
+      fillAndSubmitForm({
+        gameId: pl.game_lock || 'game-room-1',
+        playerName: (pl.user&&pl.user.name)||'Guest',
+        email: (pl.user&&pl.user.email)||'',
+        cardId: cardIdFromGrid(pl.grid),
+        cardNumbers: flattenGridToCsv(pl.grid),
+        marks: Array.from(state.marks).join('|'),
+        tiktok: (pl.user&&pl.user.tiktok)||''
+      });
+
+      toast.style.display='block';
+      if(REDIRECT_TO_LIVE){ setTimeout(function(){ location.href=LIVE_URL; }, REDIRECT_DELAY_MS); }
+      else { setTimeout(function(){ btn.disabled=false; btn.textContent=old; toast.style.display='none'; }, 2000); }
+    }
+
+    /* ====== Toggle behavior ====== */
+    function setTab(which){
+      const liveFirst = matchMedia('(max-width: 980px)').matches; // stacked mode on small
+      tabLive.classList.toggle('active', which==='live');
+      tabCard.classList.toggle('active', which==='card');
+
+      if (liveFirst){ // stacked: hide the other panel
+        if (which==='live'){ livePanel.classList.remove('hide'); cardPanel.classList.add('hide'); }
+        else { livePanel.classList.add('hide'); cardPanel.classList.remove('hide'); }
+      } else {
+        // side-by-side: show both, just focus scroll to requested one
+        livePanel.classList.remove('hide'); cardPanel.classList.remove('hide');
+        (which==='live' ? livePanel : cardPanel).scrollIntoView({behavior:'smooth',block:'start'});
+      }
+    }
+
+    /* ====== BOOT ====== */
+    async function boot(){
+      byId('joinLiveLink').href=LIVE_URL;
+      openLiveBtn.href = LIVE_URL;
+      byId('wire').textContent = 'Posting to: ' + GOOGLE_SCRIPT_URL;
+
+      const source = loadPayload();
+      let pl = null;
+
+      if (source && source.via === 'id'){
+        pl = await fetchCardById(source.id);
+        if (pl){
+          try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(pl)); }catch(e){}
+        }
+      } else if (source && source.via === 'payload'){
+        pl = source.payload;
+        try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(pl)); }catch(e){}
+      } else if (source && source.via === 'local'){
+        pl = source.payload;
+      }
+
+      if(!pl || !pl.grid || !pl.grid.length){
+        document.getElementById('noCardMsg').style.display='block';
+        // keep live visible so they can still watch
+        setTab('live');
+        return;
+      }
+
+      state.payload=pl;
+      state.markKey=gridHash(pl.grid);
+      loadMarks(); renderMeta(pl); renderCard();
+
+      // default: show live on small screens, both on wide
+      setTab(matchMedia('(max-width: 980px)').matches ? 'live' : 'card');
+    }
+
+    // wire events
+    tabLive.addEventListener('click', ()=> setTab('live'));
+    tabCard.addEventListener('click', ()=> setTab('card'));
+    document.getElementById('winBtn')?.addEventListener('click', function(e){ e.preventDefault(); sendClaim(e.currentTarget); });
+
+    if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
+  })();
+  </script>
+</body>
+</html>
