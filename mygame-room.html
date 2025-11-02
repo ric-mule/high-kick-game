@@ -244,7 +244,6 @@
 
     /* ====== UTILS ====== */
     const isPortrait = () => matchMedia('(orientation: portrait)').matches;
-
     function gridHash(g){ try{ var s=JSON.stringify(g),h=0; for(var i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return 'marks_'+Math.abs(h);}catch(e){return'marks_default';} }
     function cellKey(r,c){ return r+'-'+c; }
     function cardIdFromGrid(g){ try{ var s=JSON.stringify(g),h=0; for(var i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return 'card_'+Math.abs(h);}catch(e){return'card_unknown';} }
@@ -260,6 +259,7 @@
         return (data && data.grid) ? data : null;
       }catch(_){ return null; }
     }
+
     function parseLegacyCardParam(){ try{
       const url = new URL(location.href);
       const raw = url.searchParams.get('card'); if(!raw) return null;
@@ -282,6 +282,14 @@
         if (saved) return { via:'local', payload: JSON.parse(saved) };
       }catch(e){}
       return null;
+    }
+
+    /* ===== helper: try localStorage payload (fallback) ===== */
+    function loadLocalCard(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      }catch(_){ return null; }
     }
 
     function renderMeta(pl){
@@ -370,10 +378,10 @@
       byId('p_marks').value    = fields.marks || Array.from(state.marks).join('|');
 
       // proof photo
-      if (true){
+      if (ATTACH_IMAGE){
         const handle=(u && u.tiktok) ? u.tiktok : '';
         const canvas=drawCardToCanvas(pl.grid, state.marks, handle);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        const dataUrl = canvas.toDataURL('image/jpeg', IMG_QUALITY);
         byId('p_image').value = dataUrl;
 
         const kb = Math.round((dataUrl.length * 3/4) / 1024);
@@ -409,7 +417,7 @@
       });
 
       toast.style.display='block';
-      if(true){ setTimeout(function(){ location.href=LIVE_URL; }, 700); }
+      if(REDIRECT_TO_LIVE){ setTimeout(function(){ location.href=LIVE_URL; }, REDIRECT_DELAY_MS); }
       else { setTimeout(function(){ btn.disabled=false; btn.textContent=old; toast.style.display='none'; }, 2000); }
     }
 
@@ -428,7 +436,7 @@
       }
     }
 
-    /* ====== BOOT ====== */
+    /* ====== BOOT (with server→local fallback) ====== */
     async function boot(){
       byId('joinLiveLink').href=LIVE_URL;
       openLiveBtn.href = LIVE_URL;
@@ -438,20 +446,23 @@
       let pl = null;
 
       if (source && source.via === 'id'){
+        // 1) try server by card_id
         pl = await fetchCardById(source.id);
-        if (pl){
-          try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(pl)); }catch(e){}
-        }
+        // 2) if server returns nothing, fall back to localStorage
+        if (!pl) { pl = loadLocalCard(); }
       } else if (source && source.via === 'payload'){
         pl = source.payload;
         try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(pl)); }catch(e){}
       } else if (source && source.via === 'local'){
         pl = source.payload;
+      } else {
+        // No params? Still try localStorage.
+        pl = loadLocalCard();
       }
 
       if(!pl || !pl.grid || !pl.grid.length){
         document.getElementById('noCardMsg').style.display='block';
-        setTab('live'); // keep live visible
+        setTab('live'); // keep Live visible
         return;
       }
 
@@ -459,7 +470,7 @@
       state.markKey=gridHash(pl.grid);
       loadMarks(); renderMeta(pl); renderCard();
 
-      // default view: live in portrait, card focus in landscape
+      // default view: live in portrait, card in landscape
       setTab(isPortrait() ? 'live' : 'card');
     }
 
