@@ -8,8 +8,7 @@
   :root{
     --bg1:#061a1a; --bg2:#0b2a2a; --ring:rgba(45,212,191,.5);
     --panel:rgba(6,18,20,.72); --border:rgba(255,255,255,.10);
-    --muted:#b6c2d1; --ink:#e6f6ff; --head:#e2e8f0;
-    --accent:#16a34a;
+    --muted:#b6c2d1; --ink:#e6f6ff; --head:#e2e8f0; --accent:#16a34a;
   }
   html,body{height:100%}
   body{
@@ -35,7 +34,7 @@
   .two{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
   @media (max-width:980px){.two{grid-template-columns:1fr}}
 
-  /* tiktok block styling wrapper */
+  /* tiktok block */
   .live{
     border:1px solid var(--border); border-radius:12px; overflow:hidden;
     background:rgba(0,0,0,.35); padding:10px;
@@ -46,9 +45,14 @@
   .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:460px;overflow:hidden;border-radius:12px;
         box-shadow:0 10px 24px rgba(0,0,0,.35)}
   .grid th{background:linear-gradient(180deg,#134e4a,#0b2a2a);color:#eafff8;padding:10px;border-bottom:1px solid rgba(255,255,255,.12)}
-  .grid td{background:rgba(255,255,255,.06);color:var(--ink);font-weight:700;padding:12px;border:1px solid rgba(255,255,255,.06);text-align:center}
-
-  .pill{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.1);font-weight:800}
+  .grid td{background:rgba(255,255,255,.06);color:var(--ink);font-weight:800;padding:12px;border:1px solid rgba(255,255,255,.06);text-align:center;cursor:pointer;user-select:none}
+  .grid td.cell{position:relative}
+  .grid td.cell.hit{background:rgba(22,163,74,.12)}
+  .grid td.cell.hit::after{
+    content:''; position:absolute; inset:4px; border:3px solid var(--accent); border-radius:10px;
+    box-shadow:0 0 0 3px rgba(22,163,74,.25) inset;
+    pointer-events:none;
+  }
   .btn{
     background:linear-gradient(180deg,#0f172a,#0b1220); color:#fff;border:1px solid #203041;border-radius:10px;
     padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;
@@ -56,12 +60,13 @@
   }
   .btn:focus-visible{outline:0;box-shadow:0 0 0 3px var(--ring), 0 0 0 1px #0e7a3a inset}
   .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+  .pill{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.1);font-weight:800}
   .muted{color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
 
-<!-- Hidden iframe target for no-CORS posts -->
+<!-- Hidden iframe for no-CORS posts -->
 <iframe name="silent_post_iframe" style="display:none;width:0;height:0;border:0" aria-hidden="true"></iframe>
 
 <div class="wrap">
@@ -70,7 +75,7 @@
       <img src="./assets/fat-mule-records-logo.png" alt="Fat Mule Records logo">
       <div>
         <h1>Fat Mule Game Room</h1>
-        <div class="tag">Stream on the left, your luck on the right. 🎄</div>
+        <div class="tag">Stream on the left, your luck on the right. 🎄 Tap numbers to mark ’em.</div>
       </div>
     </div>
 
@@ -81,10 +86,9 @@
     </div>
 
     <div class="two">
-      <!-- LEFT: TikTok Live / Creator embed -->
+      <!-- LEFT: TikTok Creator embed -->
       <section>
         <div class="live">
-          <!-- your exact TikTok creator embed -->
           <blockquote class="tiktok-embed"
             cite="https://www.tiktok.com/@ricpatton"
             data-unique-id="ricpatton"
@@ -112,6 +116,7 @@
 
         <div class="btn-row">
           <button id="bingoBtn" class="btn" type="button">🎉 I Got Bingo</button>
+          <button id="clearMarksBtn" class="btn" type="button" title="Clear all marks">🧹 Clear Marks</button>
         </div>
       </section>
     </div>
@@ -121,11 +126,10 @@
 <script>
 (function(){
   // === CONFIG ===
-  // Your Apps Script URL (unchanged)
   const GOOGLE_SCRIPT_URL =
     'https://script.google.com/macros/s/AKfycbxvAlRjAj3f11KIGzwOMhxud-PGrMhsw5PWKEPIqKylj8PQp0ZBpxBPFUAD2Ktx_i0/exec';
 
-  // === Context (card + player pulled from localStorage) ===
+  // === Context (card + player) ===
   const qs = new URLSearchParams(location.search);
   const cardId = qs.get('card') || '';
 
@@ -135,6 +139,16 @@
   const tikTok = user.tiktok || '@unknown';
   const grid = Array.isArray(last.grid) ? last.grid : [];
 
+  // === Called/marked storage per card ===
+  const CALLED_KEY = (id)=> `bingo_called_${id||'anon'}`;
+  function loadCalled(){
+    try{ const arr = JSON.parse(localStorage.getItem(CALLED_KEY(cardId))||'[]'); return new Set(arr.map(x=>String(Number(x)))) }catch(_){ return new Set() }
+  }
+  function saveCalled(set){
+    try{ localStorage.setItem(CALLED_KEY(cardId), JSON.stringify(Array.from(set))) }catch(_){}
+  }
+  let calledSet = loadCalled();
+
   // === UI refs ===
   const cardTag   = document.getElementById('cardTag');
   const playerTag = document.getElementById('playerTag');
@@ -142,33 +156,51 @@
   const cardBody  = document.getElementById('cardBody');
   const cardNote  = document.getElementById('cardNote');
   const bingoBtn  = document.getElementById('bingoBtn');
+  const clearBtn  = document.getElementById('clearMarksBtn');
 
-  // If TikTok script fails to load for any reason, show the fallback text.
+  // Fallback if TikTok embed script errors
   window.addEventListener('error', (e)=>{
     if (String(e?.target?.src||'').includes('tiktok.com/embed.js')){
       const fb=document.getElementById('liveFallback'); if(fb) fb.style.display='block';
     }
   }, true);
 
-  // === Render numbers ===
+  // === Render + interactivity ===
   function renderCard(g){
     const g5 = (Array.isArray(g) && g.length===5 && g.every(r=>Array.isArray(r)&&r.length===5))
       ? g
       : Array.from({length:5},()=>Array(5).fill(''));
+
     cardBody.innerHTML = '';
     for(let r=0;r<5;r++){
       const tr=document.createElement('tr');
       for(let c=0;c<5;c++){
         const td=document.createElement('td');
-        td.textContent = (g5[r][c] ?? '').toString();
+        td.className = 'cell';
+        const num = String(g5[r][c] ?? '');
+        td.textContent = num;
+        td.dataset.num = num;
+
+        // apply current mark
+        if (num && calledSet.has(String(Number(num)))) td.classList.add('hit');
+
+        // toggle on click
+        td.addEventListener('click', ()=>{
+          if (!num) return;
+          const key = String(Number(num));
+          if (calledSet.has(key)){ calledSet.delete(key); td.classList.remove('hit'); }
+          else { calledSet.add(key); td.classList.add('hit'); }
+          saveCalled(calledSet);
+        });
+
         tr.appendChild(td);
       }
       cardBody.appendChild(tr);
     }
   }
 
-  // === Make compact JPEG (TikTok only in header, no name/email) ===
-  function makeCardJPEG({ grid = [], title = 'Fat Mule Bingo', cardId = '', tiktok = '@unknown' } = {}){
+  // === Make compact JPEG with hits drawn ===
+  function makeCardJPEG({ grid = [], title = 'Fat Mule Bingo', cardId = '', tiktok = '@unknown', called = [] } = {}){
     const SCALE = 0.66;
     const W = Math.floor(1000*SCALE), H = Math.floor(1200*SCALE);
     const P = Math.floor(40*SCALE);
@@ -199,6 +231,8 @@
 
     const g5=(Array.isArray(grid)&&grid.length===5&&grid.every(r=>Array.isArray(r)&&r.length===5))
       ? grid : Array.from({length:5},()=>Array(5).fill(''));
+    const calledSetLocal = new Set((called||[]).map(n=>String(Number(n))));
+
     ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=2;
     ctx.fillStyle='rgba(255,255,255,.06)';
     ctx.font=`800 ${Math.floor(34*SCALE)}px system-ui,Segoe UI,Arial`;
@@ -210,13 +244,25 @@
         ctx.fillRect(x,y,cell,cell); ctx.strokeRect(x,y,cell,cell);
         const n = String(g5[r][c] ?? '');
         ctx.fillText(n, x+cell/2, y+cell/2);
+
+        if (n && calledSetLocal.has(String(Number(n)))){
+          // green highlight ring
+          ctx.save();
+          ctx.strokeStyle='#16a34a';
+          ctx.lineWidth=4;
+          ctx.strokeRect(x+4, y+4, cell-8, cell-8);
+          ctx.strokeStyle='rgba(22,163,74,.28)';
+          ctx.lineWidth=8;
+          ctx.strokeRect(x+8, y+8, cell-16, cell-16);
+          ctx.restore();
+        }
       }
     }
 
-    return cvs.toDataURL('image/jpeg', 0.68); // small + clear
+    return cvs.toDataURL('image/jpeg', 0.68); // compact + clear
   }
 
-  // === Hidden-iframe post (no CORS/preflight) ===
+  // === Hidden-iframe post ===
   function post(fields){
     try{
       const f=document.createElement('form');
@@ -241,22 +287,34 @@
   statusTag.textContent = cardId ? 'Loaded from ?card=' : 'No Card ID in URL';
   statusTag.className   = 'tag ' + (cardId ? 'ok' : 'bad');
   renderCard(grid);
-  cardNote.textContent  = grid?.length ? '' : 'No grid found on this device. Bingo still logs with Card ID.';
+  cardNote.textContent  = grid?.length ? 'Tap numbers to mark called ones.' : 'No grid found on this device. You can still call Bingo with Card ID.';
 
-  // === Bingo action ===
-  document.getElementById('bingoBtn')?.addEventListener('click', ()=>{
+  // Clear all marks (for this card)
+  clearBtn?.addEventListener('click', ()=>{
+    calledSet = new Set();
+    saveCalled(calledSet);
+    renderCard(grid);
+  });
+
+  // === Bingo action (sends JPEG with your current marks) ===
+  bingoBtn?.addEventListener('click', ()=>{
     if (!cardId){ alert('No Card ID found. Re-enter from your builder link.'); return; }
     const pattern = prompt('What pattern did you hit? (e.g., Row 3, Diagonal, Blackout)') || '';
 
-    // attach compact JPEG snapshot (TikTok only in header)
-    const jpg = makeCardJPEG({ grid, title:'Fat Mule Bingo — Bingo Proof', cardId, tiktok: tikTok });
+    const calledArr = Array.from(calledSet);
+    const jpg = makeCardJPEG({
+      grid,
+      title:'Fat Mule Bingo — Bingo Proof',
+      cardId,
+      tiktok: tikTok,
+      called: calledArr
+    });
     const b64 = (jpg.split(',')[1] || '');
 
     post({
       event:'bingo',
       page:'gameroom',
       card_id: cardId,
-      // keep name/email off the payload too:
       name: '', email: '',
       pattern,
       ua: navigator.userAgent,
