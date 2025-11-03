@@ -5,9 +5,12 @@
 <title>Fat Mule — Game Room</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  :root{--bg1:#061a1a; --bg2:#0b2a2a; --ring:rgba(45,212,191,.5);
-    --panel:rgba(6,18,20,.72); --border:rgba(255,255,255,.08);
-    --muted:#b6c2d1; --ink:#e6f6ff; --head:#e2e8f0;}
+  :root{
+    --bg1:#061a1a; --bg2:#0b2a2a; --ring:rgba(45,212,191,.5);
+    --panel:rgba(6,18,20,.72); --border:rgba(255,255,255,.10);
+    --muted:#b6c2d1; --ink:#e6f6ff; --head:#e2e8f0;
+    --accent:#16a34a;
+  }
   html,body{height:100%}
   body{
     margin:0;color:#f8fafc;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;
@@ -16,24 +19,44 @@
       radial-gradient(1000px 700px at 90% -20%, #013, transparent 60%),
       linear-gradient(180deg,var(--bg1),var(--bg2));
   }
-  .wrap{max-width:1100px;margin:0 auto;padding:20px}
-  .panel{background:var(--panel);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:14px;
-    box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);padding:18px}
-  .brand{display:flex;align-items:center;gap:12px;margin:6px 0 10px}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px}
+  .panel{
+    background:var(--panel); backdrop-filter:blur(6px);
+    border:1px solid var(--border); border-radius:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+    padding:18px
+  }
+  .brand{display:flex;align-items:center;gap:12px;margin:6px 0 12px}
   .brand img{height:52px;filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
   h1{margin:0;font-size:26px}
-  .muted{color:var(--muted);font-size:12px}
-  .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:420px;overflow:hidden;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  .tag{font-size:12px;color:#cbd5e1}
+
+  /* two columns: stream (left) / card (right) */
+  .two{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
+  @media (max-width:980px){.two{grid-template-columns:1fr}}
+
+  /* tiktok block styling wrapper */
+  .live{
+    border:1px solid var(--border); border-radius:12px; overflow:hidden;
+    background:rgba(0,0,0,.35); padding:10px;
+  }
+  .live .fallback{padding:14px;font-size:14px;color:#e2e8f0}
+
+  /* card */
+  .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:460px;overflow:hidden;border-radius:12px;
+        box-shadow:0 10px 24px rgba(0,0,0,.35)}
   .grid th{background:linear-gradient(180deg,#134e4a,#0b2a2a);color:#eafff8;padding:10px;border-bottom:1px solid rgba(255,255,255,.12)}
   .grid td{background:rgba(255,255,255,.06);color:var(--ink);font-weight:700;padding:12px;border:1px solid rgba(255,255,255,.06);text-align:center}
-  .two{display:grid;grid-template-columns:1.1fr .9fr;gap:20px}
-  @media (max-width:900px){.two{grid-template-columns:1fr}}
-  .btn{background:linear-gradient(180deg,#0f172a,#0b1220);color:#fff;border:1px solid #203041;border-radius:10px;
-    padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.25)}
+
+  .pill{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.1);font-weight:800}
+  .btn{
+    background:linear-gradient(180deg,#0f172a,#0b1220); color:#fff;border:1px solid #203041;border-radius:10px;
+    padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.25)
+  }
   .btn:focus-visible{outline:0;box-shadow:0 0 0 3px var(--ring), 0 0 0 1px #0e7a3a inset}
   .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-  .pill{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.1);font-weight:800}
-  .tag{font-size:12px;color:#cbd5e1}
+  .muted{color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -47,48 +70,48 @@
       <img src="./assets/fat-mule-records-logo.png" alt="Fat Mule Records logo">
       <div>
         <h1>Fat Mule Game Room</h1>
-        <div class="tag">Call clean. Claim clear. 🎄</div>
+        <div class="tag">Stream on the left, your luck on the right. 🎄</div>
       </div>
     </div>
 
-    <div class="two">
-      <!-- LEFT -->
-      <section>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span id="cardTag" class="pill">Card: —</span>
-          <span id="playerTag" class="pill">Player: —</span>
-          <span id="statusTag" class="tag"></span>
-        </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <span id="cardTag" class="pill">Card: —</span>
+      <span id="playerTag" class="pill">@—</span>
+      <span id="statusTag" class="tag"></span>
+    </div>
 
-        <h3 style="margin:14px 0 8px;color:var(--head)">Your Card</h3>
+    <div class="two">
+      <!-- LEFT: TikTok Live / Creator embed -->
+      <section>
+        <div class="live">
+          <!-- your exact TikTok creator embed -->
+          <blockquote class="tiktok-embed"
+            cite="https://www.tiktok.com/@ricpatton"
+            data-unique-id="ricpatton"
+            data-embed-type="creator"
+            style="max-width: 100%; min-width: 280px;">
+            <section>
+              <a target="_blank" href="https://www.tiktok.com/@ricpatton?refer=creator_embed">@ricpatton</a>
+            </section>
+          </blockquote>
+          <script async src="https://www.tiktok.com/embed.js"></script>
+          <div id="liveFallback" class="fallback" style="display:none">
+            If the live doesn’t load, refresh or check TikTok embed permissions.
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: Card + action -->
+      <section>
+        <h3 style="margin:0 0 8px;color:var(--head)">Your Card</h3>
         <table class="grid" aria-label="Your 5×5 card">
           <thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead>
           <tbody id="cardBody"></tbody>
         </table>
         <p class="muted" id="cardNote" style="margin-top:8px"></p>
-      </section>
 
-      <!-- RIGHT -->
-      <section>
-        <h3 style="margin:0 0 8px;color:var(--head)">Actions</h3>
         <div class="btn-row">
-          <button id="claimBtn" class="btn" type="button">✋ Claim (Need a Check)</button>
           <button id="bingoBtn" class="btn" type="button">🎉 I Got Bingo</button>
-        </div>
-
-        <div id="claimPane" style="display:none;margin-top:6px">
-          <div style="display:flex;gap:8px;margin:6px 0;align-items:center">
-            <input id="claim_reason" placeholder="Reason (e.g., missing number)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #2a4147;background:rgba(255,255,255,.06);color:#e7f5ff">
-          </div>
-          <div style="display:flex;gap:8px;margin:6px 0;align-items:center">
-            <input id="claim_pattern" placeholder="Pattern (e.g., row 3, diagonal)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #2a4147;background:rgba(255,255,255,.06);color:#e7f5ff">
-          </div>
-          <button id="sendClaimBtn" class="btn" type="button">Send Claim</button>
-          <span class="tag" style="margin-left:8px">We’ll log it to “Claims”.</span>
-        </div>
-
-        <div style="margin-top:14px">
-          <div class="tag">If your name/email don’t show, hosts match you via Card ID.</div>
         </div>
       </section>
     </div>
@@ -98,15 +121,18 @@
 <script>
 (function(){
   // === CONFIG ===
+  // Your Apps Script URL (unchanged)
   const GOOGLE_SCRIPT_URL =
     'https://script.google.com/macros/s/AKfycbxvAlRjAj3f11KIGzwOMhxud-PGrMhsw5PWKEPIqKylj8PQp0ZBpxBPFUAD2Ktx_i0/exec';
 
-  // === Context ===
+  // === Context (card + player pulled from localStorage) ===
   const qs = new URLSearchParams(location.search);
   const cardId = qs.get('card') || '';
+
   let last = {};
   try{ last = JSON.parse(localStorage.getItem('bingo_card_last')||'{}'); }catch(_){}
   const user = last.user || {};
+  const tikTok = user.tiktok || '@unknown';
   const grid = Array.isArray(last.grid) ? last.grid : [];
 
   // === UI refs ===
@@ -115,10 +141,14 @@
   const statusTag = document.getElementById('statusTag');
   const cardBody  = document.getElementById('cardBody');
   const cardNote  = document.getElementById('cardNote');
-  const claimBtn  = document.getElementById('claimBtn');
   const bingoBtn  = document.getElementById('bingoBtn');
-  const claimPane = document.getElementById('claimPane');
-  const sendClaimBtn = document.getElementById('sendClaimBtn');
+
+  // If TikTok script fails to load for any reason, show the fallback text.
+  window.addEventListener('error', (e)=>{
+    if (String(e?.target?.src||'').includes('tiktok.com/embed.js')){
+      const fb=document.getElementById('liveFallback'); if(fb) fb.style.display='block';
+    }
+  }, true);
 
   // === Render numbers ===
   function renderCard(g){
@@ -137,10 +167,9 @@
     }
   }
 
-  // === Build compact JPEG (smaller canvas + quality) ===
-  function makeCardJPEG({ grid = [], title = 'Fat Mule Bingo', cardId = '', player = {} } = {}){
-    // smaller frame keeps files tiny
-    const SCALE = 0.66;                 // ~2/3 size
+  // === Make compact JPEG (TikTok only in header, no name/email) ===
+  function makeCardJPEG({ grid = [], title = 'Fat Mule Bingo', cardId = '', tiktok = '@unknown' } = {}){
+    const SCALE = 0.66;
     const W = Math.floor(1000*SCALE), H = Math.floor(1200*SCALE);
     const P = Math.floor(40*SCALE);
     const COLS=5, ROWS=5, cell=Math.floor((W-P*2)/COLS), top=P+Math.floor(120*SCALE);
@@ -157,8 +186,8 @@
     ctx.font=`bold ${Math.floor(40*SCALE)}px system-ui,Segoe UI,Arial`;
     ctx.fillText(title, P+Math.floor(12*SCALE), P+Math.floor(52*SCALE));
     ctx.font=`700 ${Math.floor(24*SCALE)}px system-ui,Segoe UI,Arial`;
-    const nameLine=(player.name||'Unknown')+(player.email?` · ${player.email}`:'');
-    ctx.fillText(nameLine, P+Math.floor(12*SCALE), P+Math.floor(86*SCALE));
+    ctx.fillText(`TikTok: ${tiktok}`, P+Math.floor(12*SCALE), P+Math.floor(86*SCALE));
+
     ctx.fillStyle='#a7f3d0';
     ctx.font=`600 ${Math.floor(20*SCALE)}px system-ui,Segoe UI,Arial`;
     ctx.fillText(`Card ID: ${cardId||'—'}`, W-P-Math.floor(340*SCALE), P+Math.floor(52*SCALE));
@@ -184,8 +213,7 @@
       }
     }
 
-    // compact JPEG output
-    return cvs.toDataURL('image/jpeg', 0.68); // ~10–30KB typical
+    return cvs.toDataURL('image/jpeg', 0.68); // small + clear
   }
 
   // === Hidden-iframe post (no CORS/preflight) ===
@@ -209,56 +237,27 @@
 
   // === Init UI ===
   cardTag.textContent   = 'Card: ' + (cardId || '—');
-  playerTag.textContent = 'Player: ' + ((user.name ? user.name : '—') + (user.email ? ` · ${user.email}` : ''));
+  playerTag.textContent = tikTok || '@—';
   statusTag.textContent = cardId ? 'Loaded from ?card=' : 'No Card ID in URL';
   statusTag.className   = 'tag ' + (cardId ? 'ok' : 'bad');
   renderCard(grid);
-  cardNote.textContent  = grid?.length ? '' : 'No grid found on this device. Claims/Bingos still log with Card ID.';
+  cardNote.textContent  = grid?.length ? '' : 'No grid found on this device. Bingo still logs with Card ID.';
 
-  // === Actions ===
-  claimBtn?.addEventListener('click', ()=>{
-    claimPane.style.display = (claimPane.style.display==='none' || !claimPane.style.display) ? 'block' : 'none';
-    document.getElementById('claim_reason')?.focus();
-  });
-
-  sendClaimBtn?.addEventListener('click', ()=>{
-    if (!cardId){ alert('No Card ID found. Re-enter from your builder link.'); return; }
-    const reason  = document.getElementById('claim_reason')?.value || '';
-    const pattern = document.getElementById('claim_pattern')?.value || '';
-
-    // attach a small JPEG snapshot as proof
-    const jpg = makeCardJPEG({ grid, title:'Fat Mule Bingo — Claim Proof', cardId, player:user });
-    const b64 = (jpg.split(',')[1] || '');
-
-    post({
-      event:'claim',
-      page:'gameroom',
-      card_id: cardId,
-      name: user.name || '',
-      email: user.email || '',
-      reason, pattern,
-      ua: navigator.userAgent,
-      card_jpg_b64: b64
-    });
-
-    claimPane.style.display='none';
-    alert('Claim sent. Host will review it.');
-  });
-
-  bingoBtn?.addEventListener('click', ()=>{
+  // === Bingo action ===
+  document.getElementById('bingoBtn')?.addEventListener('click', ()=>{
     if (!cardId){ alert('No Card ID found. Re-enter from your builder link.'); return; }
     const pattern = prompt('What pattern did you hit? (e.g., Row 3, Diagonal, Blackout)') || '';
 
-    // attach a small JPEG snapshot as proof
-    const jpg = makeCardJPEG({ grid, title:'Fat Mule Bingo — Bingo Proof', cardId, player:user });
+    // attach compact JPEG snapshot (TikTok only in header)
+    const jpg = makeCardJPEG({ grid, title:'Fat Mule Bingo — Bingo Proof', cardId, tiktok: tikTok });
     const b64 = (jpg.split(',')[1] || '');
 
     post({
       event:'bingo',
       page:'gameroom',
       card_id: cardId,
-      name: user.name || '',
-      email: user.email || '',
+      // keep name/email off the payload too:
+      name: '', email: '',
       pattern,
       ua: navigator.userAgent,
       card_jpg_b64: b64
