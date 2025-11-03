@@ -45,7 +45,11 @@
   .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:460px;overflow:hidden;border-radius:12px;
         box-shadow:0 10px 24px rgba(0,0,0,.35)}
   .grid th{background:linear-gradient(180deg,#134e4a,#0b2a2a);color:#eafff8;padding:10px;border-bottom:1px solid rgba(255,255,255,.12)}
-  .grid td{background:rgba(255,255,255,.06);color:var(--ink);font-weight:800;padding:12px;border:1px solid rgba(255,255,255,.06);text-align:center;cursor:pointer;user-select:none}
+  .grid td{
+    background:rgba(255,255,255,.06);color:var(--ink);font-weight:800;
+    padding:12px;border:1px solid rgba(255,255,255,.06);
+    text-align:center;cursor:pointer;user-select:none
+  }
   .grid td.cell{position:relative}
   .grid td.cell.hit{background:rgba(22,163,74,.12)}
   .grid td.cell.hit::after{
@@ -53,6 +57,7 @@
     box-shadow:0 0 0 3px rgba(22,163,74,.25) inset;
     pointer-events:none;
   }
+
   .btn{
     background:linear-gradient(180deg,#0f172a,#0b1220); color:#fff;border:1px solid #203041;border-radius:10px;
     padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;
@@ -89,6 +94,7 @@
       <!-- LEFT: TikTok Creator embed -->
       <section>
         <div class="live">
+          <!-- your exact TikTok creator embed -->
           <blockquote class="tiktok-embed"
             cite="https://www.tiktok.com/@ricpatton"
             data-unique-id="ricpatton"
@@ -158,7 +164,7 @@
   const bingoBtn  = document.getElementById('bingoBtn');
   const clearBtn  = document.getElementById('clearMarksBtn');
 
-  // Fallback if TikTok embed script errors
+  // If TikTok embed script errors
   window.addEventListener('error', (e)=>{
     if (String(e?.target?.src||'').includes('tiktok.com/embed.js')){
       const fb=document.getElementById('liveFallback'); if(fb) fb.style.display='block';
@@ -181,10 +187,8 @@
         td.textContent = num;
         td.dataset.num = num;
 
-        // apply current mark
         if (num && calledSet.has(String(Number(num)))) td.classList.add('hit');
 
-        // toggle on click
         td.addEventListener('click', ()=>{
           if (!num) return;
           const key = String(Number(num));
@@ -199,21 +203,28 @@
     }
   }
 
-  // === Make compact JPEG with hits drawn ===
+  // === Make compact JPEG with visible numbers + hit highlights ===
   function makeCardJPEG({ grid = [], title = 'Fat Mule Bingo', cardId = '', tiktok = '@unknown', called = [] } = {}){
     const SCALE = 0.66;
     const W = Math.floor(1000*SCALE), H = Math.floor(1200*SCALE);
     const P = Math.floor(40*SCALE);
     const COLS=5, ROWS=5, cell=Math.floor((W-P*2)/COLS), top=P+Math.floor(120*SCALE);
 
+    const CELL_BG    = 'rgba(255,255,255,.06)';
+    const CELL_EDGE  = 'rgba(255,255,255,.20)';
+    const TEXT_FILL  = '#e6f6ff';
+    const TEXT_STROKE= 'rgba(0,0,0,.35)';
+
     const cvs=document.createElement('canvas'); cvs.width=W; cvs.height=H;
     const ctx=cvs.getContext('2d');
 
+    // background + header bar
     ctx.fillStyle='#0b2a2a'; ctx.fillRect(0,0,W,H);
     const g=ctx.createLinearGradient(0,0,0,Math.floor(200*SCALE));
     g.addColorStop(0,'#134e4a'); g.addColorStop(1,'#0b2a2a');
     ctx.fillStyle=g; ctx.fillRect(P,P,W-P*2,Math.floor(110*SCALE));
 
+    // header text (TikTok only)
     ctx.fillStyle='#eafff8';
     ctx.font=`bold ${Math.floor(40*SCALE)}px system-ui,Segoe UI,Arial`;
     ctx.fillText(title, P+Math.floor(12*SCALE), P+Math.floor(52*SCALE));
@@ -225,28 +236,43 @@
     ctx.fillText(`Card ID: ${cardId||'—'}`, W-P-Math.floor(340*SCALE), P+Math.floor(52*SCALE));
     ctx.fillText(new Date().toLocaleString(), W-P-Math.floor(340*SCALE), P+Math.floor(86*SCALE));
 
+    // column labels
     ctx.fillStyle='#eafff8'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font=`900 ${Math.floor(36*SCALE)}px system-ui,Segoe UI,Arial`;
     'BINGO'.split('').forEach((ch,i)=>ctx.fillText(ch, P+i*cell+cell/2, top-Math.floor(28*SCALE)));
 
+    // grid + numbers
     const g5=(Array.isArray(grid)&&grid.length===5&&grid.every(r=>Array.isArray(r)&&r.length===5))
       ? grid : Array.from({length:5},()=>Array(5).fill(''));
     const calledSetLocal = new Set((called||[]).map(n=>String(Number(n))));
 
-    ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.lineWidth=2;
-    ctx.fillStyle='rgba(255,255,255,.06)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font=`800 ${Math.floor(34*SCALE)}px system-ui,Segoe UI,Arial`;
-    ctx.fillStyle='#e6f6ff';
 
     for(let r=0;r<ROWS;r++){
       for(let c=0;c<COLS;c++){
         const x=P+c*cell, y=top+r*cell;
-        ctx.fillRect(x,y,cell,cell); ctx.strokeRect(x,y,cell,cell);
+        const cx = x+cell/2, cy = y+cell/2;
         const n = String(g5[r][c] ?? '');
-        ctx.fillText(n, x+cell/2, y+cell/2);
 
+        // 1) background
+        ctx.fillStyle = CELL_BG;
+        ctx.fillRect(x,y,cell,cell);
+
+        // 2) border
+        ctx.strokeStyle = CELL_EDGE;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x,y,cell,cell);
+
+        // 3) number: dark stroke behind + light fill on top
+        ctx.lineWidth = Math.max(1, Math.floor(2*SCALE));
+        ctx.strokeStyle = TEXT_STROKE;
+        ctx.strokeText(n, cx, cy);
+        ctx.fillStyle = TEXT_FILL;
+        ctx.fillText(n, cx, cy);
+
+        // 4) hit highlight ring
         if (n && calledSetLocal.has(String(Number(n)))){
-          // green highlight ring
           ctx.save();
           ctx.strokeStyle='#16a34a';
           ctx.lineWidth=4;
@@ -259,7 +285,7 @@
       }
     }
 
-    return cvs.toDataURL('image/jpeg', 0.68); // compact + clear
+    return cvs.toDataURL('image/jpeg', 0.68); // compact, readable
   }
 
   // === Hidden-iframe post ===
@@ -296,7 +322,7 @@
     renderCard(grid);
   });
 
-  // === Bingo action (sends JPEG with your current marks) ===
+  // === Bingo action (sends JPEG with current marks) ===
   bingoBtn?.addEventListener('click', ()=>{
     if (!cardId){ alert('No Card ID found. Re-enter from your builder link.'); return; }
     const pattern = prompt('What pattern did you hit? (e.g., Row 3, Diagonal, Blackout)') || '';
@@ -315,10 +341,10 @@
       event:'bingo',
       page:'gameroom',
       card_id: cardId,
-      name: '', email: '',
+      name: '', email: '',            // no PII in payload
       pattern,
       ua: navigator.userAgent,
-      card_jpg_b64: b64
+      card_jpg_b64: b64               // server saves JPEG + logs link
     });
 
     alert('Bingo called! Logged with proof.');
