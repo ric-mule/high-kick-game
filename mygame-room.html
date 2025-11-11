@@ -84,9 +84,7 @@
   @keyframes breathe{0%{box-shadow:0 0 0 0 rgba(22,163,74,.35)}100%{box-shadow:0 0 0 12px rgba(22,163,74,0)}}
   #bingoBtn.busy{ opacity:.7; pointer-events:none; background:linear-gradient(180deg,#0b1220,#0b1220); }
   #bingoBtn.sent{ background:linear-gradient(180deg,#0e3a22,#0b2417); border-color:#22c55e; }
-  #bingoBtn.sent::after{
-    content:' ✓'; font-weight:900; color:#22c55e;
-  }
+  #bingoBtn.sent::after{ content:' ✓'; font-weight:900; color:#22c55e; }
 
   /* Success flash */
   .flash{
@@ -126,7 +124,8 @@
       </div>
       <div class="controls" style="margin-left:auto">
         <button id="btnRotate" class="btn tiny" type="button">↻ Rotate View</button>
-        <button id="btnLock" class="btn tiny" type="button">🔒 Lock Landscape</button>
+        <button id="btnLock"   class="btn tiny" type="button">🔒 Lock Landscape</button>
+        <button id="btnAuto"   class="btn tiny" type="button" style="display:none">🧭 Enable Auto-Rotate</button>
       </div>
     </div>
 
@@ -194,17 +193,24 @@
   const GOOGLE_SCRIPT_URL =
     'https://script.google.com/macros/s/AKfycbxvAlRjAj3f11KIGzwOMhxud-PGrMhsw5PWKEPIqKylj8PQp0ZBpxBPFUAD2Ktx_i0/exec';
 
-  // === Orientation helpers ===
+  // === Orientation helpers (robust) ===
   const rotateHint = document.getElementById('rotateHint');
   const btnRotate  = document.getElementById('btnRotate');
   const btnLock    = document.getElementById('btnLock');
+  const btnAuto    = document.getElementById('btnAuto');
   const hintRotate = document.getElementById('hintRotate');
   const hintClose  = document.getElementById('hintClose');
 
+  let sensorOn = false; // flips true after permission
+
   function isLandscapeNow(){
     try{
-      return window.matchMedia('(orientation: landscape)').matches || (window.innerWidth > window.innerHeight);
-    }catch(_){ return window.innerWidth > window.innerHeight; }
+      if (screen.orientation && typeof screen.orientation.angle === 'number'){
+        const ang = screen.orientation.angle % 180;
+        return ang !== 0 ? true : (window.innerWidth > window.innerHeight);
+      }
+    }catch(_){}
+    return window.innerWidth > window.innerHeight;
   }
   function applyOrientationClass(){
     const land = isLandscapeNow();
@@ -212,7 +218,6 @@
     maybeShowRotateHint(!land);
   }
   function maybeShowRotateHint(show){
-    // show hint on narrow portrait phones only
     const narrow = Math.min(window.innerWidth, window.innerHeight) < 700;
     rotateHint.classList.toggle('show', !!show && narrow);
   }
@@ -222,31 +227,66 @@
   }
   async function lockLandscape(){
     try{
-      await requestFullscreen(document.documentElement); // increases chance API works
+      await requestFullscreen(document.documentElement);
       if (screen.orientation && screen.orientation.lock){
         await screen.orientation.lock('landscape');
       }
-    }catch(_){
-      // iOS Safari and some browsers will fail silently — we fall back to CSS class
-    }
-    // Always force our CSS layout as a last resort
-    document.body.classList.add('landscape');
+    }catch(_){}
+    document.body.classList.add('landscape'); // CSS fallback either way
   }
 
-  // Wires for rotation controls
+  async function enableAutoRotate(){
+    try{
+      const DevOrient = window.DeviceOrientationEvent;
+      if (DevOrient && typeof DevOrient.requestPermission === 'function'){
+        const res = await DevOrient.requestPermission();
+        if (res !== 'granted'){ btnAuto.style.display='inline-block'; return; }
+      }
+      startMotionWatch();
+      btnAuto.style.display='none';
+    }catch(_){
+      btnAuto.style.display='inline-block';
+    }
+  }
+  function startMotionWatch(){
+    if (sensorOn) return;
+    sensorOn = true;
+    window.addEventListener('deviceorientation', handleTilt, {passive:true});
+  }
+  function handleTilt(e){
+    const gamma = e.gamma; // -90..90 (left/right)
+    const beta  = e.beta;  // -180..180 (front/back)
+    if (typeof gamma === 'number' && typeof beta === 'number'){
+      const sideways = Math.abs(gamma) > 45 && Math.abs(beta) < 70;
+      if (sideways){
+        document.body.classList.add('landscape');
+        rotateHint.classList.remove('show');
+      }else{
+        if (!isLandscapeNow()) document.body.classList.remove('landscape');
+      }
+    }
+  }
+
+  // Wires
   btnRotate.addEventListener('click', ()=>{
     document.body.classList.toggle('landscape');
     maybeShowRotateHint(!document.body.classList.contains('landscape'));
   });
   btnLock.addEventListener('click', lockLandscape);
+  btnAuto.addEventListener('click', enableAutoRotate);
   hintRotate.addEventListener('click', ()=>{ lockLandscape(); rotateHint.classList.remove('show'); });
   hintClose.addEventListener('click', ()=> rotateHint.classList.remove('show'));
 
   window.addEventListener('resize', applyOrientationClass);
   window.addEventListener('orientationchange', applyOrientationClass);
-  // iOS sometimes ignores orientationchange; poll a bit after load
+  if (screen.orientation && 'onchange' in screen.orientation){
+    screen.orientation.addEventListener('change', applyOrientationClass);
+  }
+
   setTimeout(applyOrientationClass, 50);
   setTimeout(applyOrientationClass, 600);
+  // Try to enable sensors automatically; if permission needed, show the button
+  enableAutoRotate();
 
   // === Context (card + player) ===
   const qs = new URLSearchParams(location.search);
@@ -445,14 +485,12 @@
       return;
     }
 
-    // Button visual change
-    bingoBtn.classList.remove('sent'); // reset if previously sent
+    bingoBtn.classList.remove('sent');
     bingoBtn.classList.add('busy');
     const prevText = bingoBtn.textContent;
     bingoBtn.textContent = '⏳ Sending…';
     vibrate(40);
 
-    // Ask pattern quickly
     const pattern = prompt('What pattern did you hit? (Row 3, Diagonal, Blackout)') || '';
 
     const calledArr = Array.from(calledSet);
@@ -465,7 +503,6 @@
     });
     const b64 = (jpg.split(',')[1] || '');
 
-    // Fire the post
     post({
       event:'bingo',
       page:'gameroom',
@@ -476,7 +513,6 @@
       card_jpg_b64: b64
     });
 
-    // Success visuals (we can’t verify CORS response via iframe; assume success UX)
     localStorage.setItem('bingo_last_sent', String(now));
     setTimeout(()=>{
       bingoBtn.classList.remove('busy');
@@ -485,7 +521,6 @@
       flash.classList.add('show');
       setTimeout(()=> flash.classList.remove('show'), 350);
       vibrate([30,40,30]);
-      // Re-enable after window
       setTimeout(()=>{
         bingoBtn.classList.remove('sent');
         bingoBtn.textContent = prevText;
