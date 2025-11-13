@@ -38,7 +38,6 @@
   }
   @media (min-width:980px){ .two{ grid-template-columns:1.2fr .8fr } }
   @media (orientation:landscape) and (min-width:640px){ .two{ grid-template-columns:1fr 1fr } }
-  body.landscape .two{ grid-template-columns:1fr 1fr } /* JS/manual override */
 
   /* tiktok block */
   .live{
@@ -93,20 +92,6 @@
   }
   .flash.show{ display:block; }
   @keyframes flash{ from{opacity:1} to{opacity:0} }
-
-  /* Rotate hint overlay (when in portrait on narrow phones) */
-  #rotateHint{
-    position:fixed; inset:auto 12px 12px 12px; z-index:9998; display:none;
-    background:rgba(15,23,42,.92); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px;
-  }
-  #rotateHint.show{ display:block; }
-  #rotateHint .row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  #rotateHint .msg{font-size:13px;color:#cbd5e1}
-  #rotateHint .act{display:flex;gap:8px}
-
-  /* Header controls */
-  .controls{display:flex;gap:8px;flex-wrap:wrap}
-  .tiny{font-size:12px;padding:8px 10px}
 </style>
 </head>
 <body>
@@ -120,12 +105,7 @@
       <img src="./assets/fat-mule-records-logo.png" alt="Fat Mule Records logo">
       <div>
         <h1>Fat Mule Game Room</h1>
-        <div class="tag">Flip your phone — landscape shows stream &amp; card side by side. Tap numbers to mark ’em.</div>
-      </div>
-      <div class="controls" style="margin-left:auto">
-        <button id="btnRotate" class="btn tiny" type="button">↻ Rotate View</button>
-        <button id="btnLock"   class="btn tiny" type="button">🔒 Lock Landscape</button>
-        <button id="btnAuto"   class="btn tiny" type="button" style="display:none">🧭 Enable Auto-Rotate</button>
+        <div class="tag">Turn your phone sideways to see the stream and card together. Tap numbers to mark ’em.</div>
       </div>
     </div>
 
@@ -176,147 +156,55 @@
 <!-- Success flash -->
 <div id="flash" class="flash" aria-hidden="true"></div>
 
-<!-- Rotate hint -->
-<div id="rotateHint" role="status" aria-live="polite">
-  <div class="row">
-    <div class="msg">For the best view, turn your phone sideways.</div>
-    <div class="act">
-      <button id="hintRotate" class="btn tiny" type="button">↻ Rotate Now</button>
-      <button id="hintClose"  class="btn tiny" type="button">✕</button>
-    </div>
-  </div>
-</div>
-
 <script>
 (function(){
   // === CONFIG ===
   const GOOGLE_SCRIPT_URL =
     'https://script.google.com/macros/s/AKfycbxvAlRjAj3f11KIGzwOMhxud-PGrMhsw5PWKEPIqKylj8PQp0ZBpxBPFUAD2Ktx_i0/exec';
 
-  // === Orientation helpers (robust) ===
-  const rotateHint = document.getElementById('rotateHint');
-  const btnRotate  = document.getElementById('btnRotate');
-  const btnLock    = document.getElementById('btnLock');
-  const btnAuto    = document.getElementById('btnAuto');
-  const hintRotate = document.getElementById('hintRotate');
-  const hintClose  = document.getElementById('hintClose');
+  // === Small helpers ===
+  const $ = (s)=>document.querySelector(s);
 
-  let sensorOn = false; // flips true after permission
-
-  function isLandscapeNow(){
-    try{
-      if (screen.orientation && typeof screen.orientation.angle === 'number'){
-        const ang = screen.orientation.angle % 180;
-        return ang !== 0 ? true : (window.innerWidth > window.innerHeight);
-      }
-    }catch(_){}
-    return window.innerWidth > window.innerHeight;
+  function shortCardId(id){
+    if (!id) return '—';
+    const s = String(id);
+    if (s.length <= 6) return s;
+    return '…' + s.slice(-4); // only show last 4
   }
-  function applyOrientationClass(){
-    const land = isLandscapeNow();
-    document.body.classList.toggle('landscape', land);
-    maybeShowRotateHint(!land);
-  }
-  function maybeShowRotateHint(show){
-    const narrow = Math.min(window.innerWidth, window.innerHeight) < 700;
-    rotateHint.classList.toggle('show', !!show && narrow);
-  }
-  async function requestFullscreen(el){
-    const any = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen || el.mozRequestFullScreen;
-    if (any) try{ await any.call(el); }catch(_){}
-  }
-  async function lockLandscape(){
-    try{
-      await requestFullscreen(document.documentElement);
-      if (screen.orientation && screen.orientation.lock){
-        await screen.orientation.lock('landscape');
-      }
-    }catch(_){}
-    document.body.classList.add('landscape'); // CSS fallback either way
-  }
-
-  async function enableAutoRotate(){
-    try{
-      const DevOrient = window.DeviceOrientationEvent;
-      if (DevOrient && typeof DevOrient.requestPermission === 'function'){
-        const res = await DevOrient.requestPermission();
-        if (res !== 'granted'){ btnAuto.style.display='inline-block'; return; }
-      }
-      startMotionWatch();
-      btnAuto.style.display='none';
-    }catch(_){
-      btnAuto.style.display='inline-block';
-    }
-  }
-  function startMotionWatch(){
-    if (sensorOn) return;
-    sensorOn = true;
-    window.addEventListener('deviceorientation', handleTilt, {passive:true});
-  }
-  function handleTilt(e){
-    const gamma = e.gamma; // -90..90 (left/right)
-    const beta  = e.beta;  // -180..180 (front/back)
-    if (typeof gamma === 'number' && typeof beta === 'number'){
-      const sideways = Math.abs(gamma) > 45 && Math.abs(beta) < 70;
-      if (sideways){
-        document.body.classList.add('landscape');
-        rotateHint.classList.remove('show');
-      }else{
-        if (!isLandscapeNow()) document.body.classList.remove('landscape');
-      }
-    }
-  }
-
-  // Wires
-  btnRotate.addEventListener('click', ()=>{
-    document.body.classList.toggle('landscape');
-    maybeShowRotateHint(!document.body.classList.contains('landscape'));
-  });
-  btnLock.addEventListener('click', lockLandscape);
-  btnAuto.addEventListener('click', enableAutoRotate);
-  hintRotate.addEventListener('click', ()=>{ lockLandscape(); rotateHint.classList.remove('show'); });
-  hintClose.addEventListener('click', ()=> rotateHint.classList.remove('show'));
-
-  window.addEventListener('resize', applyOrientationClass);
-  window.addEventListener('orientationchange', applyOrientationClass);
-  if (screen.orientation && 'onchange' in screen.orientation){
-    screen.orientation.addEventListener('change', applyOrientationClass);
-  }
-
-  setTimeout(applyOrientationClass, 50);
-  setTimeout(applyOrientationClass, 600);
-  // Try to enable sensors automatically; if permission needed, show the button
-  enableAutoRotate();
 
   // === Context (card + player) ===
   const qs = new URLSearchParams(location.search);
-  const cardId = qs.get('card') || '';
+  const cardId  = qs.get('card') || '';
+  const pattern = qs.get('pat')  || '';
 
   let last = {};
   try{ last = JSON.parse(localStorage.getItem('bingo_card_last')||'{}'); }catch(_){}
-  const user = last.user || {};
+  const user   = last.user || {};
   const tikTok = user.tiktok || '@unknown';
-  const grid = Array.isArray(last.grid) ? last.grid : [];
+  const grid   = Array.isArray(last.grid) ? last.grid : [];
 
   // === Called/marked storage per card ===
   const CALLED_KEY = (id)=> `bingo_called_${id||'anon'}`;
   function loadCalled(){
-    try{ const arr = JSON.parse(localStorage.getItem(CALLED_KEY(cardId))||'[]'); return new Set(arr.map(x=>String(Number(x)))) }catch(_){ return new Set() }
+    try{
+      const arr = JSON.parse(localStorage.getItem(CALLED_KEY(cardId))||'[]');
+      return new Set(arr.map(x=>String(Number(x))));
+    }catch(_){ return new Set(); }
   }
   function saveCalled(set){
-    try{ localStorage.setItem(CALLED_KEY(cardId), JSON.stringify(Array.from(set))) }catch(_){}
+    try{ localStorage.setItem(CALLED_KEY(cardId), JSON.stringify(Array.from(set))); }catch(_){}
   }
   let calledSet = loadCalled();
 
   // === UI refs ===
-  const cardTag   = document.getElementById('cardTag');
-  const playerTag = document.getElementById('playerTag');
-  const statusTag = document.getElementById('statusTag');
-  const cardBody  = document.getElementById('cardBody');
-  const cardNote  = document.getElementById('cardNote');
-  const bingoBtn  = document.getElementById('bingoBtn');
-  const clearBtn  = document.getElementById('clearMarksBtn');
-  const flash     = document.getElementById('flash');
+  const cardTag   = $('#cardTag');
+  const playerTag = $('#playerTag');
+  const statusTag = $('#statusTag');
+  const cardBody  = $('#cardBody');
+  const cardNote  = $('#cardNote');
+  const bingoBtn  = $('#bingoBtn');
+  const clearBtn  = $('#clearMarksBtn');
+  const flash     = $('#flash');
 
   // If TikTok embed script errors
   window.addEventListener('error', (e)=>{
@@ -352,8 +240,13 @@
         td.addEventListener('click', ()=>{
           if (!num) return;
           const key = String(Number(num));
-          if (calledSet.has(key)){ calledSet.delete(key); td.classList.remove('hit'); }
-          else { calledSet.add(key); td.classList.add('hit'); }
+          if (calledSet.has(key)){
+            calledSet.delete(key);
+            td.classList.remove('hit');
+          }else{
+            calledSet.add(key);
+            td.classList.add('hit');
+          }
           saveCalled(calledSet);
           updateBingoReady();
         });
@@ -456,12 +349,14 @@
   }
 
   // === Init UI ===
-  cardTag.textContent   = 'Card: ' + (cardId || '—');
+  cardTag.textContent   = 'Card: ' + (cardId ? shortCardId(cardId) : '—');
   playerTag.textContent = tikTok || '@—';
-  statusTag.textContent = cardId ? 'Loaded from ?card=' : 'No Card ID in URL';
-  statusTag.className   = 'tag ' + (cardId ? 'ok' : 'bad');
+  statusTag.textContent = pattern ? ('Pattern: ' + pattern) : '';
+
   renderCard(grid);
-  cardNote.textContent  = grid?.length ? 'Tap numbers to mark called ones.' : 'No grid found on this device. You can still call Bingo with Card ID.';
+  cardNote.textContent  = grid?.length
+    ? 'Tap numbers to mark called ones. When you’ve got a bingo, hit the button.'
+    : 'No grid found on this device. You can still call Bingo with your Card ID.';
 
   // Clear all marks (for this card)
   clearBtn?.addEventListener('click', ()=>{
@@ -475,7 +370,7 @@
   function vibrate(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(_){ } }
 
   bingoBtn?.addEventListener('click', ()=>{
-    if (!cardId){ alert('No Card ID found. Re-enter from your builder link.'); return; }
+    if (!cardId){ alert('No Card ID found. Re-open your card from the link the host gave you.'); return; }
 
     const now = Date.now();
     const lastMs = Number(localStorage.getItem('bingo_last_sent')||0);
@@ -491,7 +386,7 @@
     bingoBtn.textContent = '⏳ Sending…';
     vibrate(40);
 
-    const pattern = prompt('What pattern did you hit? (Row 3, Diagonal, Blackout)') || '';
+    const patternAnswer = prompt('What pattern did you hit? (Row 3, Diagonal, Blackout)') || '';
 
     const calledArr = Array.from(calledSet);
     const jpg = makeCardJPEG({
@@ -508,7 +403,7 @@
       page:'gameroom',
       card_id: cardId,
       name: '', email: '',
-      pattern,
+      pattern: patternAnswer,
       ua: navigator.userAgent,
       card_jpg_b64: b64
     });
