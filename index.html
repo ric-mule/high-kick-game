@@ -1,261 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Build Your Fat Mule Bingo Card — Holiday Edition</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
-<style>
-  :root{
-    --bg1:#061a1a; --bg2:#0b2a2a; --frost:#0d3640;
-    --red:#e11d48; --green:#16a34a; --gold:#fbbf24;
-    --snow:rgba(255,255,255,.7); --ring:rgba(45,212,191,.5);
-  }
-  body{
-    margin:0;
-    background:
-      radial-gradient(1200px 800px at 10% -10%, #103, transparent 60%),
-      radial-gradient(1000px 700px at 90% -20%, #013, transparent 60%),
-      linear-gradient(180deg,var(--bg1),var(--bg2));
-    min-height:100vh;color:#f8fafc;
-  }
-  .snow{pointer-events:none;position:fixed;inset:0;z-index:0;opacity:.4;
-    background-image:
-      radial-gradient(2px 2px at 20px 30px, var(--snow) 50%, transparent 51%),
-      radial-gradient(2px 2px at 80px 120px, var(--snow) 50%, transparent 51%),
-      radial-gradient(2px 2px at 200px 80px, var(--snow) 50%, transparent 51%),
-      radial-gradient(2px 2px at 320px 200px, var(--snow) 50%, transparent 51%),
-      radial-gradient(2px 2px at 480px 100px, var(--snow) 50%, transparent 51%);
-    background-size:600px 600px,700px 700px,800px 800px,900px 900px,1000px 1000px;
-    animation:snowfall 18s linear infinite;}
-  @keyframes snowfall{
-    0%{background-position:0 0,0 0,0 0,0 0,0 0;}
-    100%{background-position:0 600px,0 700px,0 800px,0 900px,0 1000px;}
-  }
-  @media (prefers-reduced-motion: reduce){
-    .snow{animation:none}.confetti{animation:none !important;opacity:0 !important}
-  }
-  #confetti-layer{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:9999}
-  .confetti{position:absolute;width:10px;height:14px;opacity:0;border-radius:2px;will-change:transform,opacity;animation:confetti-fall var(--dur,900ms) ease-out forwards}
-  @keyframes confetti-fall{
-    0%{transform:translate3d(var(--x,0),-10%,0) rotate(0deg);opacity:1}
-    100%{transform:translate3d(calc(var(--x,0) + var(--dx,0)),110%,0) rotate(720deg);opacity:0}
-  }
-
-  #billiobingo{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:18px 18px 30px}
-  .frost{background:rgba(6,18,20,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);padding:18px}
-
-  #billiobingo *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}
-  #billiobingo h1{margin:6px 0 8px;font-size:28px;letter-spacing:.3px}
-  #billiobingo h2{margin:16px 0 8px;font-size:18px;color:#e2e8f0}
-  #billiobingo .muted{color:#b6c2d1;font-size:12px}
-  #billiobingo .two-col{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
-  @media (max-width:900px){#billiobingo .two-col{grid-template-columns:1fr}}
-
-  .garland{margin:4px 0 12px;height:46px;display:flex;align-items:flex-end;gap:10px;position:relative}
-  .garland .lights{width:100%;height:36px}
-  .tagline{position:absolute;right:8px;top:-6px;background:linear-gradient(180deg,#134e4a,#052e2b);color:#eafff8;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);font-weight:700;font-size:12px;box-shadow:0 6px 14px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08)}
-
-  #billiobingo .pad{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
-  #billiobingo .num{
-    appearance:none;-webkit-appearance:none;border:1px solid #34525a;border-radius:8px;padding:12px 0;text-align:center;
-    cursor:pointer;user-select:none;background:rgba(255,255,255,.06);color:#e6f6ff;font-weight:800;font-size:15px;letter-spacing:.2px;
-    transition:transform .12s, background .15s, color .15s, border-color .15s, box-shadow .15s;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 1px 1px rgba(0,0,0,.25)
-  }
-  #billiobingo .num:hover{background:rgba(255,255,255,.12);border-color:#4aa3b2;box-shadow:0 0 0 3px rgba(45,212,191,.18);transform:translateY(-1px)}
-  #billiobingo .num.sel{
-    background:linear-gradient(180deg,#16a34a,#0e7a3a);color:#fff;border-color:#0e7a3a;box-shadow:0 0 0 3px rgba(22,163,74,.28), 0 6px 16px rgba(0,0,0,.25)
-  }
-  #billiobingo .num:focus-visible, #billiobingo .btn:focus-visible{outline:0;box-shadow:0 0 0 3px var(--ring), 0 0 0 1px #0e7a3a inset}
-
-  #billiobingo .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 14px}
-  #billiobingo .btn{
-    background:linear-gradient(180deg,#0f172a,#0b1220);color:#fff;border:1px solid #203041;border-radius:10px;
-    padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.25)
-  }
-  #billiobingo .btn[disabled]{opacity:.6;cursor:not-allowed}
-  #randBtn{background:linear-gradient(180deg,#fce7f3,#f9a8d4 60%, #fb7185);color:#2b0c14;border-color:#be185d;text-shadow:0 1px 0 rgba(255,255,255,.35)}
-  #clearBtn{background:linear-gradient(180deg,#e2e8f0,#cbd5e1);color:#0b1220;border-color:#64748b}
-  #billiobingo .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);color:#e6f6ff;font-weight:800;border:1px solid rgba(255,255,255,.18)}
-  #billiobingo .warn{color:#fda4af}
-
-  #billiobingo .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:480px;overflow:hidden;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
-  #billiobingo .grid th{background:linear-gradient(180deg,#134e4a,#0b2a2a);color:#eafff8;padding:12px;border-bottom:1px solid rgba(255,255,255,.12);font-size:15px;letter-spacing:.6px}
-  #billiobingo .grid td{background:rgba(255,255,255,.06);color:#e6f6ff;font-weight:700;padding:12px;border:1px solid rgba(255,255,255,.06);text-align:center}
-
-  #billiobingo .mini{border-collapse:separate;border-spacing:0;width:100%;margin-top:8px;overflow:hidden;border-radius:10px}
-  #billiobingo .mini td,#billiobingo .mini th{border:1px solid rgba(255,255,255,.08);padding:6px;text-align:center;font-size:12px;background:rgba(255,255,255,.04);color:#dbeafe}
-
-  #billiobingo input, #billiobingo textarea, #billiobingo select{
-    width:100%;padding:10px 12px;border:1px solid #2a4147;border-radius:8px;background:rgba(255,255,255,.06);color:#e7f5ff
-  }
-  #billiobingo input::placeholder{color:#98a6b3}
-  #billiobingo label{font-size:13px;margin:8px 0 4px;display:block;color:#e2e8f0}
-
-  #billiobingo .brand{display:flex;align-items:center;gap:12px;margin:10px 0 6px}
-  #billiobingo .brand img{height:52px;width:auto;display:block;filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
-  .brand h1{display:flex;align-items:center;gap:8px}
-  .brand h1 .holly{font-size:20px;background:linear-gradient(180deg,#14532d,#052e2b);padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
-
-  #billiobingo .remember-row{display:flex;gap:8px;align-items:center;margin:6px 0 4px}
-  #billiobingo .forget-link{font-size:12px;color:#cbd5e1;text-decoration:underline;cursor:pointer}
-  #billiobingo .section{margin-top:18px}
-  .holiday-footer{margin-top:10px;display:flex;align-items:center;gap:10px;color:#e2e8f0;font-size:12px}
-  #billiobingo .footer{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
-  #billiobingo .optin input[type="checkbox"]{width:16px;height:16px;margin-top:2px}
-  #billiobingo .optin span{font-size:12px;color:#cbd5e1;line-height:1.25}
-</style>
-</head>
-<body>
-<div class="snow" aria-hidden="true"></div>
-<div id="confetti-layer" aria-hidden="true"></div>
-
-<!-- Hidden target for classic form POST (bulletproof send) -->
-<iframe name="silent_post_iframe" style="display:none;width:0;height:0;border:0" aria-hidden="true"></iframe>
-
-<div id="billiobingo">
-  <div class="frost">
-    <div class="garland" aria-hidden="true">
-      <svg class="lights" viewBox="0 0 600 60" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="glowR" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ff8fa3"/><stop offset="1" stop-color="#e11d48"/></linearGradient>
-          <linearGradient id="glowG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#86efac"/><stop offset="1" stop-color="#16a34a"/></linearGradient>
-          <linearGradient id="glowY" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fde68a"/><stop offset="1" stop-color="#f59e0b"/></linearGradient>
-        </defs>
-        <path d="M0,20 C100,60 200,-10 300,20 400,50 500,-10 600,20" fill="none" stroke="#134e4a" stroke-width="4"/>
-        <g>
-          <ellipse cx="60" cy="30" rx="8" ry="12" fill="url(#glowR)"/>
-          <ellipse cx="140" cy="18" rx="8" ry="12" fill="url(#glowG)"/>
-          <ellipse cx="220" cy="32" rx="8" ry="12" fill="url(#glowY)"/>
-          <ellipse cx="300" cy="18" rx="8" ry="12" fill="url(#glowR)"/>
-          <ellipse cx="380" cy="32" rx="8" ry="12" fill="url(#glowG)"/>
-          <ellipse cx="460" cy="18" rx="8" ry="12" fill="url(#glowY)"/>
-          <ellipse cx="540" cy="30" rx="8" ry="12" fill="url(#glowR)"/>
-        </g>
-      </svg>
-      <span class="tagline">Holiday Edition ❄️</span>
-    </div>
-
-    <div class="brand">
-      <img src="./assets/fat-mule-records-logo.png" alt="Fat Mule Records logo">
-      <h1>Build Your Fat Mule Bingo Card <span class="holly">🎄✨</span></h1>
-    </div>
-
-    <p class="muted">Pick <strong>exactly 25 numbers</strong> from 1–100. Preview updates live. Then submit — we’ll log it to the sheet and send you to the Game Room.</p>
-
-    <div class="two-col">
-      <section>
-        <div class="bar">
-          <button id="randBtn" class="btn" type="button">🎁 Random 25</button>
-          <button id="clearBtn" class="btn" type="button">🧹 Clear</button>
-          <span id="count" class="pill" aria-live="polite">Selected: 0 / 25</span>
-          <span id="alert" class="muted warn" role="alert" aria-live="assertive"></span>
-        </div>
-        <div id="pad" class="pad" role="grid" aria-label="Pick numbers 1 to 100"></div>
-      </section>
-
-      <section>
-        <h2>Card Preview</h2>
-        <table class="grid" aria-label="5 by 5 card preview">
-          <thead>
-            <tr><th scope="col">B</th><th scope="col">I</th><th scope="col">N</th><th scope="col">G</th><th scope="col">O</th></tr>
-          </thead>
-          <tbody id="previewTop"></tbody>
-        </table>
-      </section>
-    </div>
-
-    <div class="section">
-      <h2>Submit Your Card <span class="badge">Good Luck &amp; Good Cheer 🎅🏽</span></h2>
-
-      <form id="bzForm" method="POST" autocomplete="on" novalidate>
-        <label for="f_name">Name</label>
-        <input id="f_name" name="name" placeholder="Your name" required autocomplete="name">
-
-        <label for="f_email">Email</label>
-        <input id="f_email" name="email" type="email" placeholder="you@example.com" required autocomplete="email">
-
-        <label class="optin" for="f_notify" style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 4px;">
-          <input type="checkbox" id="f_notify" checked>
-          <span>Send me reminders before future games.</span>
-        </label>
-
-        <label for="f_game_time">Which game?</label>
-        <select id="f_game_time" name="game_time">
-          <option value="">Decide later</option>
-          <option value="20:00">First game (8:00 PM)</option>
-          <option value="21:15">Second game (9:15 PM)</option>
-        </select>
-
-        <label for="f_tiktok">TikTok username</label>
-        <input id="f_tiktok" name="tiktok" placeholder="@yourusername" autocomplete="username">
-
-        <div class="remember-row">
-          <input id="f_remember" type="checkbox" aria-label="Keep me on this device, baby">
-          <label for="f_remember" style="margin:0;">Keep me on this device, baby</label>
-          <span id="forget_link" class="forget-link" role="button" tabindex="0">Nah, forget me here</span>
-        </div>
-
-        <div style="display:flex;gap:10px;align-items:center;margin:8px 0">
-          <input id="f_locked" type="checkbox">
-          <label for="f_locked" style="margin:0">Save card</label>
-        </div>
-
-        <label for="f_game_lock">Game Lock #</label>
-        <input id="f_game_lock" name="game_lock" inputmode="numeric" placeholder="e.g., 7421" aria-describedby="lockHelp">
-        <span id="lockHelp" class="muted">Digits only.</span>
-
-        <!-- HIDDEN payloads -->
-        <input type="hidden" id="f_selected_hidden" name="selected_numbers">
-        <input type="hidden" id="f_json_hidden" name="grid_json">
-        <input type="hidden" id="f_locked_hidden" name="locked" value="false">
-
-        <!-- Server mirrors -->
-        <input type="hidden" id="f_card_id" name="card_id">
-        <input type="hidden" id="f_notify_h" name="notify">
-        <input type="hidden" id="f_game_time_h" name="game_time_iso">
-
-        <!-- Email-friendly rows -->
-        <input type="hidden" id="f_row1" name="row_1">
-        <input type="hidden" id="f_row2" name="row_2">
-        <input type="hidden" id="f_row3" name="row_3">
-        <input type="hidden" id="f_row4" name="row_4">
-        <input type="hidden" id="f_row5" name="row_5">
-
-        <!-- Optional BINGO columns -->
-        <input type="hidden" id="f_colB" name="col_B">
-        <input type="hidden" id="f_colI" name="col_I">
-        <input type="hidden" id="f_colN" name="col_N">
-        <input type="hidden" id="f_colG" name="col_G">
-        <input type="hidden" id="f_colO" name="col_O">
-
-        <table class="mini" aria-label="5 by 5 card preview (form)">
-          <thead>
-            <tr><th scope="col">B</th><th scope="col">I</th><th scope="col">N</th><th scope="col">G</th><th scope="col">O</th></tr>
-          </thead>
-          <tbody id="previewBottom"></tbody>
-        </table>
-
-        <div class="footer">
-          <button class="btn" type="submit">Send &amp; Continue ➜</button>
-          <button id="saveBtn" class="btn" type="button">💾 Save for Later</button>
-          <button id="loadBtn" class="btn" type="button">📥 Load Saved</button>
-          <button id="linkBtn" class="btn" type="button">🔗 Copy Magic Link</button>
-          <span id="msg" class="muted" aria-live="polite"></span>
-        </div>
-
-        <p class="muted" style="margin-top:6px;">
-          By sendin’ your card, you’re steppin’ into the Fat Mule fam—where the blues stay loud, the games stay live, and the good times roll. Unsubscribe anytime.
-        </p>
-      </form>
-
-      <p class="muted">After submit, you’ll be redirected to the Game Room.</p>
-      <div class="holiday-footer"><span>❄️ From our juke joint to yours — happy holidays and lucky numbers.</span></div>
-    </div>
-  </div>
-</div>
-
 <script>
 (function(){
   const GAME_ROOM_URL = 'https://alabamabluesman.com/live-bingo-game-room';
@@ -572,18 +314,31 @@
     msgEl.textContent='Sending…';
 
     const pl=payload();
-    try{ localStorage.setItem('bingo_notify_optin', pl.notify?'yes':'no'); localStorage.setItem('last_submit_card_id', pl.card_id); }catch(e){}
+    try{
+      localStorage.setItem('bingo_notify_optin', pl.notify?'yes':'no');
+      localStorage.setItem('last_submit_card_id', pl.card_id);
+    }catch(e){}
     await postToGoogle(pl);
 
     if(pl.notify) msgEl.textContent='We’ll remind you before future games. ✓';
     celebrateConfetti(1);
-    setTimeout(()=>{ window.location.href = GAME_ROOM_URL + '?card=' + encodeURIComponent(pl.card_id); }, 900);
+
+    // 🔐 Pack the card data so the card-only game room can rebuild everything inside Bandzoogle
+    const packed = b64urlEncode(JSON.stringify({
+      grid: pl.grid,
+      user: pl.user,
+      card_id: pl.card_id
+    }));
+
+    setTimeout(()=>{
+      window.location.href =
+        GAME_ROOM_URL
+        + '?card='   + encodeURIComponent(pl.card_id)
+        + '&packed=' + encodeURIComponent(packed);
+    }, 900);
   });
 
   // init
   syncAll();
 })();
 </script>
-</body>
-</html>
-
