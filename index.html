@@ -258,6 +258,7 @@
 
 <script>
 (function(){
+  // 👉 Bandzoogle game room URL
   const GAME_ROOM_URL = 'https://alabamabluesman.com/live-bingo-game-room';
   const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvAlRjAj3f11KIGzwOMhxud-PGrMhsw5PWKEPIqKylj8PQp0ZBpxBPFUAD2Ktx_i0/exec';
 
@@ -359,38 +360,23 @@
     let arr=Array.from(state.picks).sort((a,b)=>a-b);
     while(arr.length<25) arr.push('');
     const g=[]; let k=0;
-    for(let r=0;r<5;r++){
-      const row=[];
-      for(let c=0;c<5;c++){ row.push(arr[k++]); }
-      g.push(row);
-    }
+    for(let r=0;r<5;r++){ const row=[]; for(let c=0;c<5;c++){ row.push(arr[k++]); } g.push(row); }
     state.grid=g;
   }
-
   function render(tbody){
     tbody.innerHTML=''; const g=state.grid;
-    for(let r=0;r<5;r++){
-      const tr=document.createElement('tr');
-      for(let c=0;c<5;c++){
-        const td=document.createElement('td');
-        td.textContent=g[r][c];
-        tr.appendChild(td);
-      }
+    for(let r=0;r<5;r++){ const tr=document.createElement('tr');
+      for(let c=0;c<5;c++){ const td=document.createElement('td'); td.textContent=g[r][c]; tr.appendChild(td); }
       tbody.appendChild(tr);
     }
   }
-
   function rowsAndCols(g){
     const rows=g.map(r=>r.map(x=>x===''?'':String(x)).join(' '));
     const cols=[0,1,2,3,4].map(c=>g.map(r=>r[c]).map(x=>x===''?'':String(x)).join(' '));
     return {rows,cols};
   }
 
-  function newCardId(){
-    return (crypto.randomUUID
-      ? crypto.randomUUID()
-      : ('cid_'+Date.now()+'_'+Math.random().toString(16).slice(2)));
-  }
+  function newCardId(){ return (crypto.randomUUID? crypto.randomUUID():('cid_'+Date.now()+'_'+Math.random().toString(16).slice(2))); }
   if(!fCardId.value) fCardId.value=newCardId();
 
   function syncMetaFields(){
@@ -437,10 +423,7 @@
 
   function syncAll(){
     document.getElementById('count').textContent=`Selected: ${state.picks.size} / 25`;
-    buildGrid();
-    render(previewTop);
-    render(previewBottom);
-    pushIntoForm();
+    buildGrid(); render(previewTop); render(previewBottom); pushIntoForm();
   }
 
   function buildFlatPayload(pl){
@@ -457,40 +440,18 @@
   }
 
   function celebrateConfetti(bursts=1){
-    const layer=document.getElementById('confetti-layer')||(()=>{
-      const d=document.createElement('div');
-      d.id='confetti-layer';
-      document.body.appendChild(d);
-      return d;
-    })();
-    const colors=['#F87171','#FBBF24','#34D399','#60A5FA','#A78BFA','#F472B6','#FDE68A','#22D3EE'];
-    const W=window.innerWidth;
-    for(let b=0;b<bursts;b++){
-      const frag=document.createDocumentFragment();
-      for(let i=0;i<120;i++){
-        const el=document.createElement('div');
-        el.className='confetti';
-        const size=8+Math.random()*8;
-        el.style.width=size+'px';
-        el.style.height=(size*1.35)+'px';
-        el.style.background =
-          Math.random()<0.25
-          ? `linear-gradient(180deg, ${colors[i%colors.length]}, #fff)`
-          : colors[(i+Math.floor(Math.random()*colors.length))%colors.length];
-        const startX=(Math.random()*W)+'px';
-        el.style.setProperty('--x',startX);
-        el.style.setProperty('--dx',(Math.random()*160-80)+'px');
-        el.style.setProperty('--dur',(700+Math.random()*900)+'ms');
-        el.style.left=0;
-        el.style.transform=`translate3d(${startX},-10%,0)`;
-        el.addEventListener('animationend',()=>el.remove());
-        frag.appendChild(el);
-      }
-      layer.appendChild(frag);
+    const layer=document.getElementById('confetti-layer')||(()=>{const d=document.createElement('div');d.id='confetti-layer';document.body.appendChild(d);return d})();
+    const colors=['#F87171','#FBBF24','#34D399','#60A5FA','#A78BFA','#F472B6','#FDE68A','#22D3EE']; const W=window.innerWidth;
+    for(let b=0;b<bursts;b++){ const frag=document.createDocumentFragment();
+      for(let i=0;i<120;i++){ const el=document.createElement('div'); el.className='confetti';
+        const size=8+Math.random()*8; el.style.width=size+'px'; el.style.height=(size*1.35)+'px';
+        el.style.background = Math.random()<0.25 ? `linear-gradient(180deg, ${colors[i%colors.length]}, #fff)` : colors[(i+Math.floor(Math.random()*colors.length))%colors.length];
+        const startX=(Math.random()*W)+'px'; el.style.setProperty('--x',startX); el.style.setProperty('--dx',(Math.random()*160-80)+'px'); el.style.setProperty('--dur',(700+Math.random()*900)+'ms');
+        el.style.left=0; el.style.transform=`translate3d(${startX},-10%,0)`; el.addEventListener('animationend',()=>el.remove()); frag.appendChild(el);
+      } layer.appendChild(frag);
     }
   }
 
-  // Send to Google via hidden form → iframe
   function postToGoogle(pl){
     const flat = buildFlatPayload(pl);
     try{
@@ -501,164 +462,72 @@
       tmpForm.target='silent_post_iframe';
       for(const [k,v] of Object.entries(flat)){
         const input=document.createElement('input');
-        input.type='hidden'; input.name=k; input.value=v;
-        tmpForm.appendChild(input);
+        input.type='hidden'; input.name=k; input.value=v; tmpForm.appendChild(input);
       }
       document.body.appendChild(tmpForm);
       tmpForm.submit();
       setTimeout(()=>tmpForm.remove(),1500);
       return Promise.resolve(true);
-    }catch(_){
-      return Promise.resolve(true);
-    }
+    }catch(_){ return Promise.resolve(true); }
   }
 
-  // Buttons
   document.getElementById('randBtn').addEventListener('click', ()=>{
-    state.picks.clear();
-    padEl.querySelectorAll('.num.sel').forEach(el=>{
-      el.classList.remove('sel');
-      el.setAttribute('aria-pressed','false');
-    });
+    state.picks.clear(); padEl.querySelectorAll('.num.sel').forEach(el=>{el.classList.remove('sel'); el.setAttribute('aria-pressed','false')});
     const pool=[...Array(100)].map((_,i)=>i+1);
-    for(let i=pool.length-1;i>0;i--){
-      const j=Math.floor(Math.random()*(i+1));
-      [pool[i],pool[j]]=[pool[j],pool[i]];
-    }
-    pool.slice(0,25).forEach(n=>{
-      state.picks.add(n);
-      const cell=padEl.querySelector(`.num[data-n="${n}"]`);
-      if(cell){
-        cell.classList.add('sel');
-        cell.setAttribute('aria-pressed','true');
-      }
-    });
-    syncAll();
-    const first=Array.from(state.picks).sort((a,b)=>a-b)[0];
-    padEl.querySelector(`.num[data-n="${first}"]`)?.focus();
+    for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+    pool.slice(0,25).forEach(n=>{ state.picks.add(n); const cell=padEl.querySelector(`.num[data-n="${n}"]`); if(cell){ cell.classList.add('sel'); cell.setAttribute('aria-pressed','true'); }});
+    syncAll(); const first=Array.from(state.picks).sort((a,b)=>a-b)[0]; padEl.querySelector(`.num[data-n="${first}"]`)?.focus();
   });
-
   document.getElementById('clearBtn').addEventListener('click', ()=>{
-    state.picks.clear();
-    padEl.querySelectorAll('.num.sel').forEach(el=>{
-      el.classList.remove('sel');
-      el.setAttribute('aria-pressed','false');
-    });
-    syncAll();
+    state.picks.clear(); padEl.querySelectorAll('.num.sel').forEach(el=>{el.classList.remove('sel'); el.setAttribute('aria-pressed','false')}); syncAll();
   });
 
   ['input','change'].forEach(evt=>{
     fName.addEventListener(evt,pushIntoForm);
     fEmail.addEventListener(evt,pushIntoForm);
-    fTikTok.addEventListener(evt,()=>{
-      fTikTok.value=normalizeHandle(fTikTok.value);
-      pushIntoForm();
-    });
+    fTikTok.addEventListener(evt,()=>{ fTikTok.value=normalizeHandle(fTikTok.value); pushIntoForm(); });
     fLocked.addEventListener(evt,pushIntoForm);
-    fGameLock.addEventListener(evt,()=>{
-      fGameLock.value=fGameLock.value.replace(/\D+/g,'').slice(0,8);
-      pushIntoForm();
-    });
+    fGameLock.addEventListener(evt,()=>{ fGameLock.value=fGameLock.value.replace(/\D+/g,'').slice(0,8); pushIntoForm(); });
     if(fNotify) fNotify.addEventListener(evt,()=>{ syncMetaFields(); pushIntoForm(); });
     if(fGameTime) fGameTime.addEventListener(evt,()=>{ syncMetaFields(); pushIntoForm(); });
   });
 
   function saveRemembered(){
     if(!fRemember || !fRemember.checked) return;
-    const data={
-      name:fName.value.trim(),
-      email:fEmail.value.trim(),
-      tiktok:normalizeHandle(fTikTok.value.trim())
-    };
+    const data={ name:fName.value.trim(), email:fEmail.value.trim(), tiktok:normalizeHandle(fTikTok.value.trim()) };
     try{ localStorage.setItem(REM_KEY, JSON.stringify(data)); }catch(e){}
   }
-
   if(fRemember){
-    [fName,fEmail,fTikTok].forEach(el=>{
-      el.addEventListener('input',saveRemembered);
-      el.addEventListener('change',saveRemembered);
-    });
-    fRemember.addEventListener('change', ()=>{
-      if(!fRemember.checked) localStorage.removeItem(REM_KEY);
-      else saveRemembered();
-    });
+    [fName,fEmail,fTikTok].forEach(el=>{ el.addEventListener('input',saveRemembered); el.addEventListener('change',saveRemembered); });
+    fRemember.addEventListener('change', ()=>{ if(!fRemember.checked) localStorage.removeItem(REM_KEY); else saveRemembered(); });
   }
-
   if(forgetLink){
-    const clearSaved=()=>{
-      localStorage.removeItem(REM_KEY);
-      if(fRemember) fRemember.checked=false;
-      alert('All right—info cleared on this device.');
-    };
+    const clearSaved=()=>{ localStorage.removeItem(REM_KEY); if(fRemember) fRemember.checked=false; alert('All right—info cleared on this device.') };
     forgetLink.addEventListener('click', e=>{ e.preventDefault(); clearSaved(); });
-    forgetLink.addEventListener('keydown', e=>{
-      if(e.key==='Enter'||e.key===' '){
-        e.preventDefault();
-        clearSaved();
-      }
-    });
+    forgetLink.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); clearSaved(); }});
   }
 
   const SAVE_KEY='bingo_card_saved_v2';
   function saveCurrentCardLocal(){
     if(state.picks.size!==25){ alert('Pick exactly 25 numbers first, sugar.'); return; }
     const pl=payload();
-    const pack={
-      picks:pl.selected,
-      user:pl.user,
-      locked:pl.locked,
-      game_lock:pl.game_lock,
-      card_id:pl.card_id,
-      game_time:pl.game_time,
-      notify:pl.notify,
-      saved_at:Date.now(),
-      v:'v2'
-    };
-    try{
-      localStorage.setItem(SAVE_KEY, JSON.stringify(pack));
-      alert('Card saved on this device. Hit “Load Saved” later.');
-    }catch(e){
-      alert('Couldn’t save on this device.');
-    }
+    const pack={ picks:pl.selected, user:pl.user, locked:pl.locked, game_lock:pl.game_lock, card_id:pl.card_id, game_time:pl.game_time, notify:pl.notify, saved_at:Date.now(), v:'v2' };
+    try{ localStorage.setItem(SAVE_KEY, JSON.stringify(pack)); alert('Card saved on this device. Hit “Load Saved” later.'); }catch(e){ alert('Couldn’t save on this device.'); }
   }
-
   function loadSavedCardLocal(){
     try{
-      const raw=localStorage.getItem(SAVE_KEY);
-      if(!raw) return alert('No saved card on this device yet.');
+      const raw=localStorage.getItem(SAVE_KEY); if(!raw) return alert('No saved card on this device yet.');
       const pack=JSON.parse(raw);
-      state.picks.clear();
-      padEl.querySelectorAll('.num.sel').forEach(el=>{
-        el.classList.remove('sel');
-        el.setAttribute('aria-pressed','false');
-      });
-      (pack.picks||[]).forEach(n=>{
-        state.picks.add(Number(n));
-        const cell=padEl.querySelector(`.num[data-n="${n}"]`);
-        if(cell){
-          cell.classList.add('sel');
-          cell.setAttribute('aria-pressed','true');
-        }
-      });
-      fName.value=pack.user?.name||'';
-      fEmail.value=pack.user?.email||'';
-      fTikTok.value=pack.user?.tiktok||'';
-      fLocked.checked=!!pack.locked;
-      fGameLock.value=pack.game_lock||'';
+      state.picks.clear(); padEl.querySelectorAll('.num.sel').forEach(el=>{el.classList.remove('sel'); el.setAttribute('aria-pressed','false')});
+      (pack.picks||[]).forEach(n=>{ state.picks.add(Number(n)); const cell=padEl.querySelector(`.num[data-n="${n}"]`); if(cell){ cell.classList.add('sel'); cell.setAttribute('aria-pressed','true'); }});
+      fName.value=pack.user?.name||''; fEmail.value=pack.user?.email||''; fTikTok.value=pack.user?.tiktok||'';
+      fLocked.checked=!!pack.locked; fGameLock.value=pack.game_lock||'';
       if(pack.card_id) fCardId.value=pack.card_id;
-      if(pack.game_time){
-        fGameTimeH.value=pack.game_time;
-        const hhmm=isoToHHMM(pack.game_time);
-        if(hhmm) fGameTime.value=hhmm;
-      }
+      if(pack.game_time){ fGameTimeH.value=pack.game_time; const hhmm=isoToHHMM(pack.game_time); if(hhmm) fGameTime.value=hhmm; }
       if(typeof pack.notify==='boolean') fNotify.checked=pack.notify;
-      syncAll();
-      alert('Loaded your saved card. Ready to roll.');
-    }catch(e){
-      alert('Couldn’t load the saved card.');
-    }
+      syncAll(); alert('Loaded your saved card. Ready to roll.');
+    }catch(e){ alert('Couldn’t load the saved card.'); }
   }
-
   saveBtn?.addEventListener('click', saveCurrentCardLocal);
   loadBtn?.addEventListener('click', loadSavedCardLocal);
 
@@ -669,59 +538,33 @@
     const hash=b64urlEncode(JSON.stringify(minimal));
     return `${location.origin}${location.pathname}#card=${hash}`;
   }
-
   function applyFromHash(){
-    const m=location.hash.match(/#card=([^&]+)/);
-    if(!m) return;
+    const m=location.hash.match(/#card=([^&]+)/); if(!m) return;
     try{
       const decoded=JSON.parse(b64urlDecode(m[1]));
-      state.picks.clear();
-      padEl.querySelectorAll('.num.sel').forEach(el=>{
-        el.classList.remove('sel');
-        el.setAttribute('aria-pressed','false');
-      });
-      (decoded.p||[]).forEach(n=>{
-        state.picks.add(Number(n));
-        const cell=padEl.querySelector(`.num[data-n="${n}"]`);
-        if(cell){
-          cell.classList.add('sel');
-          cell.setAttribute('aria-pressed','true');
-        }
-      });
-      fName.value=decoded.u?.name||'';
-      fEmail.value=decoded.u?.email||'';
-      fTikTok.value=decoded.u?.tiktok||'';
-      fLocked.checked=!!decoded.l;
-      fGameLock.value=decoded.g||'';
-      if(decoded.id) fCardId.value=decoded.id;
+      state.picks.clear(); padEl.querySelectorAll('.num.sel').forEach(el=>{el.classList.remove('sel'); el.setAttribute('aria-pressed','false')});
+      (decoded.p||[]).forEach(n=>{ state.picks.add(Number(n)); const cell=padEl.querySelector(`.num[data-n="${n}"]`); if(cell){ cell.classList.add('sel'); cell.setAttribute('aria-pressed','true'); }});
+      fName.value=decoded.u?.name||''; fEmail.value=decoded.u?.email||''; fTikTok.value=decoded.u?.tiktok||'';
+      fLocked.checked=!!decoded.l; fGameLock.value=decoded.g||''; if(decoded.id) fCardId.value=decoded.id;
       if(typeof decoded.n==='boolean') fNotify.checked=decoded.n;
-      syncAll();
-      history.replaceState(null,'',location.pathname+location.search);
-      alert('Loaded your card from magic link.');
+      syncAll(); history.replaceState(null,'',location.pathname+location.search); alert('Loaded your card from magic link.');
     }catch(_){}
   }
-
   linkBtn?.addEventListener('click', ()=>{
-    const link=buildMagicLink();
-    if(!link) return;
-    (navigator.clipboard?.writeText(link) || Promise.reject())
-      .then(
-        ()=>alert('Magic link copied. Bookmark or DM it to yourself.'),
-        ()=>prompt('Copy your magic link:', link)
-      );
+    const link=buildMagicLink(); if(!link) return;
+    (navigator.clipboard?.writeText(link) || Promise.reject()).then(()=>alert('Magic link copied. Bookmark or DM it to yourself.'),()=>prompt('Copy your magic link:', link));
   });
-
   applyFromHash();
 
   (function promptLoad(){
     if(!localStorage.getItem(SAVE_KEY)) return;
-    setTimeout(()=>{
-      if(confirm('We found a saved card on this device. Load it now?')) loadSavedCardLocal();
-    }, 400);
+    setTimeout(()=>{ if(confirm('We found a saved card on this device. Load it now?')) loadSavedCardLocal(); }, 400);
   })();
 
+  // 🚨 THIS IS THE UPDATED SUBMIT HANDLER
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
+
     if(!fName.value.trim() || !fEmail.value.trim()){
       alertEl.textContent='Name and email are required.';
       return;
@@ -730,33 +573,42 @@
       alertEl.textContent='Please select exactly 25 numbers before submitting.';
       return;
     }
+
     pushIntoForm();
     const submitBtn=form.querySelector('button[type="submit"]');
     [submitBtn, saveBtn, loadBtn, linkBtn].forEach(b=>b?.setAttribute('disabled',''));
     msgEl.textContent='Sending…';
 
     const pl=payload();
+
     try{
       localStorage.setItem('bingo_notify_optin', pl.notify?'yes':'no');
       localStorage.setItem('last_submit_card_id', pl.card_id);
     }catch(e){}
+
     await postToGoogle(pl);
 
     if(pl.notify) msgEl.textContent='We’ll remind you before future games. ✓';
     celebrateConfetti(1);
 
-    // Pack card data so Bandzoogle game room can rebuild it
-    const packed = b64urlEncode(JSON.stringify({
-      grid: pl.grid,
-      user: pl.user,
+    // 👉 pack minimal card info for Bandzoogle + iframe
+    const minimal = {
+      grid:   pl.grid,
+      user:   pl.user,
       card_id: pl.card_id
-    }));
+    };
+
+    let packed = '';
+    try{
+      packed = b64urlEncode(JSON.stringify(minimal));
+    }catch(_){}
 
     setTimeout(()=>{
-      window.location.href =
-        GAME_ROOM_URL
-        + '?card='   + encodeURIComponent(pl.card_id)
-        + '&packed=' + encodeURIComponent(packed);
+      let url = GAME_ROOM_URL + '?card=' + encodeURIComponent(pl.card_id);
+      if (packed){
+        url += '&packed=' + encodeURIComponent(packed);
+      }
+      window.location.href = url;
     }, 900);
   });
 
