@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Fat Mule — Game Room</title>
+<title>Fat Mule — Game Room (Card Only)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>
   :root{
@@ -30,26 +30,16 @@
   h1{margin:0;font-size:26px}
   .tag{font-size:12px;color:#cbd5e1}
 
-  /* two columns: defaults to stacked; landscape triggers side-by-side */
-  .two{
-    display:grid; gap:20px;
-    grid-template-columns:1fr;               /* portrait default */
-    align-items:start;
-  }
-  @media (min-width:980px){ .two{ grid-template-columns:1.2fr .8fr } }
-  @media (orientation:landscape) and (min-width:640px){ .two{ grid-template-columns:1fr 1fr } }
+  .one{display:block}
 
-  /* tiktok block */
-  .live{
-    border:1px solid var(--border); border-radius:12px; overflow:hidden;
-    background:rgba(0,0,0,.35); padding:10px;
+  .grid{
+    border-collapse:separate;border-spacing:0;width:100%;max-width:460px;overflow:hidden;border-radius:12px;
+    box-shadow:0 10px 24px rgba(0,0,0,.35)
   }
-  .live .fallback{padding:14px;font-size:14px;color:#e2e8f0}
-
-  /* card */
-  .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:460px;overflow:hidden;border-radius:12px;
-        box-shadow:0 10px 24px rgba(0,0,0,.35)}
-  .grid th{background:linear-gradient(180deg,#134e4a,#0b2a2a);color:#eafff8;padding:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .grid th{
+    background:linear-gradient(180deg,#134e4a,#0b2a2a);color:#eafff8;padding:10px;
+    border-bottom:1px solid rgba(255,255,255,.12)
+  }
   .grid td{
     background:rgba(255,255,255,.06);color:var(--ink);font-weight:800;
     padding:12px;border:1px solid rgba(255,255,255,.06);
@@ -74,18 +64,19 @@
   .pill{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(255,255,255,.1);font-weight:800}
   .muted{color:var(--muted);font-size:12px}
 
-  /* Bingo button states */
   #bingoBtn.ready{
     border-color:#126a33;
     animation:breathe 1.2s ease-in-out infinite;
     box-shadow:0 0 0 0 rgba(22,163,74,.35);
   }
-  @keyframes breathe{0%{box-shadow:0 0 0 0 rgba(22,163,74,.35)}100%{box-shadow:0 0 0 12px rgba(22,163,74,0)}}
+  @keyframes breathe{
+    0%{box-shadow:0 0 0 0 rgba(22,163,74,.35)}
+    100%{box-shadow:0 0 0 12px rgba(22,163,74,0)}
+  }
   #bingoBtn.busy{ opacity:.7; pointer-events:none; background:linear-gradient(180deg,#0b1220,#0b1220); }
   #bingoBtn.sent{ background:linear-gradient(180deg,#0e3a22,#0b2417); border-color:#22c55e; }
   #bingoBtn.sent::after{ content:' ✓'; font-weight:900; color:#22c55e; }
 
-  /* Success flash */
   .flash{
     position:fixed; inset:0; background:rgba(34,197,94,.12);
     animation:flash .35s ease-out 1; pointer-events:none; z-index:9999; display:none;
@@ -96,7 +87,6 @@
 </head>
 <body>
 
-<!-- Hidden iframe for no-CORS posts -->
 <iframe name="silent_post_iframe" style="display:none;width:0;height:0;border:0" aria-hidden="true"></iframe>
 
 <div class="wrap">
@@ -105,7 +95,7 @@
       <img src="./assets/fat-mule-records-logo.png" alt="Fat Mule Records logo">
       <div>
         <h1>Fat Mule Game Room</h1>
-        <div class="tag">Turn your phone sideways to see the stream and card together. Tap numbers to mark ’em.</div>
+        <div class="tag">Keep this page open to play your card. Tap numbers to mark ’em.</div>
       </div>
     </div>
 
@@ -115,31 +105,13 @@
       <span id="statusTag" class="tag"></span>
     </div>
 
-    <div class="two">
-      <!-- LEFT: TikTok Creator embed -->
-      <section>
-        <div class="live">
-          <blockquote class="tiktok-embed"
-            cite="https://www.tiktok.com/@ricpatton"
-            data-unique-id="ricpatton"
-            data-embed-type="creator"
-            style="max-width: 100%; min-width: 280px;">
-            <section>
-              <a target="_blank" href="https://www.tiktok.com/@ricpatton?refer=creator_embed">@ricpatton</a>
-            </section>
-          </blockquote>
-          <script async src="https://www.tiktok.com/embed.js"></script>
-          <div id="liveFallback" class="fallback" style="display:none">
-            If the live doesn’t load, refresh or check TikTok embed permissions.
-          </div>
-        </div>
-      </section>
-
-      <!-- RIGHT: Card + action -->
+    <div class="one">
       <section>
         <h3 style="margin:0 0 8px;color:var(--head)">Your Card</h3>
         <table class="grid" aria-label="Your 5×5 card">
-          <thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead>
+          <thead>
+            <tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr>
+          </thead>
           <tbody id="cardBody"></tbody>
         </table>
         <p class="muted" id="cardNote" style="margin-top:8px"></p>
@@ -153,37 +125,64 @@
   </div>
 </div>
 
-<!-- Success flash -->
 <div id="flash" class="flash" aria-hidden="true"></div>
 
 <script>
 (function(){
-  // === CONFIG ===
   const GOOGLE_SCRIPT_URL =
     'https://script.google.com/macros/s/AKfycbxvAlRjAj3f11KIGzwOMhxud-PGrMhsw5PWKEPIqKylj8PQp0ZBpxBPFUAD2Ktx_i0/exec';
 
-  // === Small helpers ===
   const $ = (s)=>document.querySelector(s);
 
   function shortCardId(id){
     if (!id) return '—';
     const s = String(id);
     if (s.length <= 6) return s;
-    return '…' + s.slice(-4); // only show last 4
+    return '…' + s.slice(-4);
   }
 
-  // === Context (card + player) ===
-  const qs = new URLSearchParams(location.search);
-  const cardId  = qs.get('card') || '';
-  const pattern = qs.get('pat')  || '';
+  function b64urlDecode(str){
+    try{
+      str = String(str || '');
+      if (!str) return '';
+      str = str.replace(/-/g,'+').replace(/_/g,'/');
+      const pad = str.length % 4 ? 4 - (str.length % 4) : 0;
+      const base = str + '='.repeat(pad);
+      return decodeURIComponent(escape(atob(base)));
+    }catch(e){
+      return '';
+    }
+  }
+
+  const qs      = new URLSearchParams(location.search);
+  let   cardId  = qs.get('card')   || '';
+  const pattern = qs.get('pat')    || '';
+  const packed  = qs.get('packed') || '';
 
   let last = {};
-  try{ last = JSON.parse(localStorage.getItem('bingo_card_last')||'{}'); }catch(_){}
+
+  if (packed){
+    try{
+      const decoded = JSON.parse(b64urlDecode(packed) || '{}');
+      last = {
+        grid: decoded.grid || [],
+        user: decoded.user || {},
+        card_id: decoded.card_id || cardId || ''
+      };
+      if (!cardId && last.card_id) cardId = last.card_id;
+      try{ localStorage.setItem('bingo_card_last', JSON.stringify(last)); }catch(_){}
+    }catch(e){
+      try{ last = JSON.parse(localStorage.getItem('bingo_card_last')||'{}'); }catch(_){}
+    }
+  }else{
+    try{ last = JSON.parse(localStorage.getItem('bingo_card_last')||'{}'); }catch(_){}
+  }
+
   const user   = last.user || {};
   const tikTok = user.tiktok || '@unknown';
   const grid   = Array.isArray(last.grid) ? last.grid : [];
+  if (!cardId && last.card_id) cardId = last.card_id || '';
 
-  // === Called/marked storage per card ===
   const CALLED_KEY = (id)=> `bingo_called_${id||'anon'}`;
   function loadCalled(){
     try{
@@ -196,7 +195,6 @@
   }
   let calledSet = loadCalled();
 
-  // === UI refs ===
   const cardTag   = $('#cardTag');
   const playerTag = $('#playerTag');
   const statusTag = $('#statusTag');
@@ -206,16 +204,11 @@
   const clearBtn  = $('#clearMarksBtn');
   const flash     = $('#flash');
 
-  // If TikTok embed script errors
-  window.addEventListener('error', (e)=>{
-    if (String(e?.target?.src||'').includes('tiktok.com/embed.js')){
-      const fb=document.getElementById('liveFallback'); if(fb) fb.style.display='block';
-    }
-  }, true);
+  cardTag.textContent   = 'Card: ' + (cardId ? shortCardId(cardId) : '—');
+  playerTag.textContent = tikTok || '@—';
+  statusTag.textContent = pattern ? ('Pattern: ' + pattern) : '';
 
-  // === Render + interactivity ===
   function updateBingoReady(){
-    // Light up button when any marks exist
     if (calledSet.size > 0) bingoBtn.classList.add('ready');
     else bingoBtn.classList.remove('ready');
   }
@@ -258,7 +251,6 @@
     updateBingoReady();
   }
 
-  // === Make compact JPEG with visible numbers + hit highlights ===
   function makeCardJPEG({ grid = [], title = 'Fat Mule Bingo', cardId = '', tiktok = '@unknown', called = [] } = {}){
     const SCALE = 0.66;
     const W = Math.floor(1000*SCALE), H = Math.floor(1200*SCALE);
@@ -273,13 +265,11 @@
     const cvs=document.createElement('canvas'); cvs.width=W; cvs.height=H;
     const ctx=cvs.getContext('2d');
 
-    // background + header bar
     ctx.fillStyle='#0b2a2a'; ctx.fillRect(0,0,W,H);
     const g=ctx.createLinearGradient(0,0,0,Math.floor(200*SCALE));
     g.addColorStop(0,'#134e4a'); g.addColorStop(1,'#0b2a2a');
     ctx.fillStyle=g; ctx.fillRect(P,P,W-P*2,Math.floor(110*SCALE));
 
-    // header text
     ctx.fillStyle='#eafff8';
     ctx.font=`bold ${Math.floor(40*SCALE)}px system-ui,Segoe UI,Arial`;
     ctx.fillText(title, P+Math.floor(12*SCALE), P+Math.floor(52*SCALE));
@@ -291,12 +281,10 @@
     ctx.fillText(`Card ID: ${cardId||'—'}`, W-P-Math.floor(340*SCALE), P+Math.floor(52*SCALE));
     ctx.fillText(new Date().toLocaleString(), W-P-Math.floor(340*SCALE), P+Math.floor(86*SCALE));
 
-    // column labels
     ctx.fillStyle='#eafff8'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font=`900 ${Math.floor(36*SCALE)}px system-ui,Segoe UI,Arial`;
     'BINGO'.split('').forEach((ch,i)=>ctx.fillText(ch, P+i*cell+cell/2, top-Math.floor(28*SCALE)));
 
-    // grid + numbers
     const g5=(Array.isArray(grid)&&grid.length===5&&grid.every(r=>Array.isArray(r)&&r.length===5))
       ? grid : Array.from({length:5},()=>Array(5).fill(''));
     const calledSetLocal = new Set((called||[]).map(n=>String(Number(n))));
@@ -329,7 +317,6 @@
     return cvs.toDataURL('image/jpeg', 0.68);
   }
 
-  // === Hidden-iframe post ===
   function post(fields){
     try{
       const f=document.createElement('form');
@@ -348,29 +335,20 @@
     }catch(_){}
   }
 
-  // === Init UI ===
-  cardTag.textContent   = 'Card: ' + (cardId ? shortCardId(cardId) : '—');
-  playerTag.textContent = tikTok || '@—';
-  statusTag.textContent = pattern ? ('Pattern: ' + pattern) : '';
+  function vibrate(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(_){ } }
 
-  renderCard(grid);
-  cardNote.textContent  = grid?.length
-    ? 'Tap numbers to mark called ones. When you’ve got a bingo, hit the button.'
-    : 'No grid found on this device. You can still call Bingo with your Card ID.';
-
-  // Clear all marks (for this card)
   clearBtn?.addEventListener('click', ()=>{
     calledSet = new Set();
     saveCalled(calledSet);
     renderCard(grid);
   });
 
-  // === Bingo action (visual feedback + throttle) ===
-  const THROTTLE_MS = 20000; // 20s no-spam window
-  function vibrate(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(_){ } }
-
+  const THROTTLE_MS = 20000;
   bingoBtn?.addEventListener('click', ()=>{
-    if (!cardId){ alert('No Card ID found. Re-open your card from the link the host gave you.'); return; }
+    if (!cardId){
+      alert('No Card ID found. Re-open your card from the link the host gave you.');
+      return;
+    }
 
     const now = Date.now();
     const lastMs = Number(localStorage.getItem('bingo_last_sent')||0);
@@ -400,9 +378,10 @@
 
     post({
       event:'bingo',
-      page:'gameroom',
+      page:'gameroom-embed',
       card_id: cardId,
-      name: '', email: '',
+      name: user.name || '',
+      email: user.email || '',
       pattern: patternAnswer,
       ua: navigator.userAgent,
       card_jpg_b64: b64
@@ -422,6 +401,11 @@
       }, THROTTLE_MS);
     }, 350);
   });
+
+  renderCard(grid);
+  cardNote.textContent = grid && grid.length
+    ? 'Tap your numbers as Ric calls them. When you’ve got a bingo, hit the button.'
+    : 'No grid found yet. Go build your card first, then come back to this page on the same device.';
 
 })();
 </script>
