@@ -91,7 +91,7 @@
   #randBtn{background:linear-gradient(180deg,#fce7f3,#f9a8d4 60%, #fb7185);color:#2b0c14;border-color:#be185d;text-shadow:0 1px 0 rgba(255,255,255,.35)}
   #clearBtn{background:linear-gradient(180deg,#e2e8f0,#cbd5e1);color:#0b1220;border-color:#64748b}
 
-  /* 🔔 Highlight Save for Later button */
+  /* ✨ Highlight Save for Later button */
   #saveBtn{
     background:linear-gradient(180deg,#facc15,#f97316);
     color:#451a03;
@@ -140,25 +140,41 @@
   #billiobingo .optin input[type="checkbox"]{width:16px;height:16px;margin-top:2px}
   #billiobingo .optin span{font-size:12px;color:#cbd5e1;line-height:1.25}
 
-  /* 🔔 Highlight “Save your card” strip */
+  /* 🎄 Badge style for holiday flair */
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11px;
+    background:linear-gradient(90deg,#f97316,#facc15);
+    color:#451a03;
+    border:1px solid rgba(250,204,21,.9);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+
+  /* 🎄 Softer “Save your card” strip */
   .save-strip{
     display:flex;
-    gap:10px;
     align-items:center;
+    gap:8px;
     margin:14px 0 10px;
-    padding:10px 12px;
-    border-radius:10px;
-    background:linear-gradient(90deg, rgba(248,250,252,.06), rgba(251,191,36,.16));
-    border:1px dashed rgba(251,191,36,.85);
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(15,23,42,.9);
+    border:1px solid rgba(148,163,184,.7);
+    box-shadow:0 4px 10px rgba(15,23,42,.7);
   }
   .save-strip::before{
-    content:"💾";
+    content:"🎄";
     font-size:16px;
   }
   .save-strip label{
     margin:0;
-    font-weight:700;
-    color:#fef9c3;
+    font-weight:600;
+    color:#e5e7eb;
   }
 </style>
 </head>
@@ -252,10 +268,10 @@
           <span id="forget_link" class="forget-link" role="button" tabindex="0">Nah, forget me here</span>
         </div>
 
-        <!-- 🔔 Highlighted “Save your card” area -->
+        <!-- 🎄 Softer, cleaner “Save your card” area -->
         <div class="save-strip">
           <input id="f_locked" type="checkbox">
-          <label for="f_locked">Save your card</label>
+          <label for="f_locked">Save your card on this device</label>
         </div>
 
         <label for="f_game_lock">Game Lock #</label>
@@ -302,7 +318,7 @@
         </div>
 
         <p class="muted" style="margin-top:6px;">
-          By sendin’ your card, you’re steppin’ into the Fat Mule fam—where the blues stay loud, the games stay live, and the good times roll. Unsubscribe anytime.
+          By sendin’ your card, you’re steppin’ into the Funky Bingo fam—where the blues stay loud, the games stay live, and the good times roll. Unsubscribe anytime.
         </p>
       </form>
 
@@ -355,7 +371,7 @@
   const fColB = document.getElementById('f_colB');
   const fColI = document.getElementById('f_colI');
   const fColN = document.getElementById('f_colN');
-  const fColG = document.getElementById('f_colG');
+  const fColG = document.getElementById('fColG');
   const fColO = document.getElementById('f_colO');
 
   const fRemember = document.getElementById('f_remember');
@@ -459,7 +475,7 @@
       timestamp:Date.now(),
       submitted_at:new Date().toISOString(),
       ua:navigator.userAgent,
-      version:'2025-11-02-holiday'
+      version:'2025-11-02-holiday-funky'
     };
   }
 
