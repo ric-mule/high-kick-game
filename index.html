@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Build Your Fat Mule Bingo Card — Holiday Edition</title>
+<title>Build Your Funky Bingo Card — Holiday Edition</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
 <style>
@@ -43,7 +43,17 @@
   }
 
   #billiobingo{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:18px 18px 30px}
-  .frost{background:rgba(6,18,20,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);padding:18px}
+  .frost{
+    background:rgba(6,18,20,.8);
+    backdrop-filter:blur(6px);
+    border-radius:14px;
+    border:1px solid rgba(251,191,36,.9);
+    box-shadow:
+      0 10px 30px rgba(0,0,0,.35),
+      0 0 24px rgba(250,250,250,.12),
+      inset 0 1px 0 rgba(255,255,255,.06);
+    padding:18px;
+  }
 
   #billiobingo *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}
   #billiobingo h1{margin:6px 0 8px;font-size:28px;letter-spacing:.3px}
@@ -72,20 +82,44 @@
   #billiobingo .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0 14px}
   #billiobingo .btn{
     background:linear-gradient(180deg,#0f172a,#0b1220);color:#fff;border:1px solid #203041;border-radius:10px;
-    padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.25)
+    padding:10px 16px;cursor:pointer;font-weight:800;letter-spacing:.2px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 6px 14px rgba(0,0,0,.25);
+    transition:transform .1s, box-shadow .1s, background .1s;
   }
   #billiobingo .btn[disabled]{opacity:.6;cursor:not-allowed}
+  #billiobingo .btn:hover{transform:translateY(-1px);box-shadow:0 9px 18px rgba(0,0,0,.4)}
+
   #randBtn{background:linear-gradient(180deg,#fce7f3,#f9a8d4 60%, #fb7185);color:#2b0c14;border-color:#be185d;text-shadow:0 1px 0 rgba(255,255,255,.35)}
   #clearBtn{background:linear-gradient(180deg,#e2e8f0,#cbd5e1);color:#0b1220;border-color:#64748b}
+
+  /* 🔔 Highlight Save for Later button */
+  #saveBtn{
+    background:linear-gradient(180deg,#facc15,#f97316);
+    color:#451a03;
+    border-color:#ea580c;
+    text-shadow:0 1px 0 rgba(255,255,255,.6);
+  }
+  #saveBtn:hover{
+    box-shadow:0 0 0 3px rgba(250,204,21,.35),0 12px 22px rgba(0,0,0,.45);
+    transform:translateY(-2px);
+  }
+
   #billiobingo .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.12);color:#e6f6ff;font-weight:800;border:1px solid rgba(255,255,255,.18)}
   #billiobingo .warn{color:#fda4af}
 
-  #billiobingo .grid{border-collapse:separate;border-spacing:0;width:100%;max-width:480px;overflow:hidden;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
-  #billiobingo .grid th{background:linear-gradient(180deg,#134e4a,#0b2a2a);color:#eafff8;padding:12px;border-bottom:1px solid rgba(255,255,255,.12);font-size:15px;letter-spacing:.6px}
-  #billiobingo .grid td{background:rgba(255,255,255,.06);color:#e6f6ff;font-weight:700;padding:12px;border:1px solid rgba(255,255,255,.06);text-align:center}
+  #billiobingo .grid{
+    border-collapse:separate;border-spacing:0;width:100%;max-width:480px;overflow:hidden;border-radius:12px;
+    box-shadow:0 10px 24px rgba(0,0,0,.35), 0 0 0 2px rgba(250,250,250,.06);
+  }
+  #billiobingo .grid th{
+    background:linear-gradient(180deg,var(--red),var(--green));
+    color:#fef9c3;padding:12px;border-bottom:1px solid rgba(255,255,255,.18);font-size:15px;letter-spacing:.6px;text-shadow:0 1px 0 rgba(0,0,0,.45)
+  }
+  #billiobingo .grid td{
+    background:rgba(15,23,42,.9);color:#e6f6ff;font-weight:700;padding:12px;border:1px solid rgba(148,163,184,.4);text-align:center
+  }
 
   #billiobingo .mini{border-collapse:separate;border-spacing:0;width:100%;margin-top:8px;overflow:hidden;border-radius:10px}
-  #billiobingo .mini td,#billiobingo .mini th{border:1px solid rgba(255,255,255,.08);padding:6px;text-align:center;font-size:12px;background:rgba(255,255,255,.04);color:#dbeafe}
+  #billiobingo .mini td,#billiobingo .mini th{border:1px solid rgba(255,255,255,.08);padding:6px;text-align:center;font-size:12px;background:rgba(15,23,42,.7);color:#dbeafe}
 
   #billiobingo input, #billiobingo textarea, #billiobingo select{
     width:100%;padding:10px 12px;border:1px solid #2a4147;border-radius:8px;background:rgba(255,255,255,.06);color:#e7f5ff
@@ -105,6 +139,27 @@
   #billiobingo .footer{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
   #billiobingo .optin input[type="checkbox"]{width:16px;height:16px;margin-top:2px}
   #billiobingo .optin span{font-size:12px;color:#cbd5e1;line-height:1.25}
+
+  /* 🔔 Highlight “Save your card” strip */
+  .save-strip{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin:14px 0 10px;
+    padding:10px 12px;
+    border-radius:10px;
+    background:linear-gradient(90deg, rgba(248,250,252,.06), rgba(251,191,36,.16));
+    border:1px dashed rgba(251,191,36,.85);
+  }
+  .save-strip::before{
+    content:"💾";
+    font-size:16px;
+  }
+  .save-strip label{
+    margin:0;
+    font-weight:700;
+    color:#fef9c3;
+  }
 </style>
 </head>
 <body>
@@ -138,8 +193,8 @@
     </div>
 
     <div class="brand">
-      <img src="./assets/fat-mule-records-logo.png" alt="Fat Mule Records logo">
-      <h1>Build Your Fat Mule Bingo Card <span class="holly">🎄✨</span></h1>
+      <!-- Logo removed by request -->
+      <h1>Build Your Funky Bingo Card <span class="holly">🎄✨</span></h1>
     </div>
 
     <p class="muted">Pick <strong>exactly 25 numbers</strong> from 1–100. Preview updates live. Then submit — we’ll log it to the sheet and send you to the Game Room.</p>
@@ -197,9 +252,10 @@
           <span id="forget_link" class="forget-link" role="button" tabindex="0">Nah, forget me here</span>
         </div>
 
-        <div style="display:flex;gap:10px;align-items:center;margin:8px 0">
+        <!-- 🔔 Highlighted “Save your card” area -->
+        <div class="save-strip">
           <input id="f_locked" type="checkbox">
-          <label for="f_locked" style="margin:0">Save card</label>
+          <label for="f_locked">Save your card</label>
         </div>
 
         <label for="f_game_lock">Game Lock #</label>
@@ -561,7 +617,7 @@
     setTimeout(()=>{ if(confirm('We found a saved card on this device. Load it now?')) loadSavedCardLocal(); }, 400);
   })();
 
-  // 🚨 THIS IS THE UPDATED SUBMIT HANDLER
+  // 🚨 SUBMIT HANDLER
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
 
